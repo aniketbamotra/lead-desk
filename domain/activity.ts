@@ -14,6 +14,8 @@ export type Activity = {
   outcome: CallOutcome | null
   note: string | null
   createdAt: string
+  /** Email of whoever logged it; set by the database. */
+  createdBy: string | null
 }
 
 export type NewActivity = {

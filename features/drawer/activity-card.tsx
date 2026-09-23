@@ -5,6 +5,7 @@ import type { Activity, ActivityType } from "@/domain/activity"
 import { callOutcomeLabel } from "@/domain/vocabularies"
 import { useActivities } from "@/data/use-activities"
 import { formatTimestamp } from "@/lib/dates"
+import { personName } from "@/lib/people"
 import { cn } from "@/lib/utils"
 import { DrawerCard } from "./drawer-card"
 
@@ -22,7 +23,7 @@ function title(activity: Activity) {
   return "Note"
 }
 
-export function ActivityCard({ leadId }: { leadId: number }) {
+export function ActivityCard({ leadId, me }: { leadId: number; me: string | null }) {
   const activities = useActivities(leadId)
 
   return (
@@ -41,6 +42,7 @@ export function ActivityCard({ leadId }: { leadId: number }) {
             const Icon = ICONS[activity.type]
             // Stage changes carry their text in the title; don't repeat it.
             const body = activity.type === "stage_change" ? null : activity.note
+            const by = personName(activity.createdBy, me)
             return (
               <li key={activity.id} className={cn("flex gap-3", activity.id < 0 && "opacity-70")}>
                 <span className="grid size-7 shrink-0 place-items-center rounded-full bg-panel">
@@ -49,9 +51,10 @@ export function ActivityCard({ leadId }: { leadId: number }) {
                 <div className="grid min-w-0 flex-1 gap-0.5">
                   <p className="flex flex-wrap items-baseline justify-between gap-x-3">
                     <span className={activity.type === "call" ? "font-medium" : undefined}>{title(activity)}</span>
-                    <time dateTime={activity.createdAt} className="tnum text-label text-ink-muted">
-                      {formatTimestamp(activity.createdAt)}
-                    </time>
+                    <span className="tnum text-label text-ink-muted">
+                      <time dateTime={activity.createdAt}>{formatTimestamp(activity.createdAt)}</time>
+                      {by && ` by ${by}`}
+                    </span>
                   </p>
                   {body && <p className="whitespace-pre-line text-ink-muted">{body}</p>}
                 </div>

@@ -36,6 +36,8 @@ type Props = {
   onClose: () => void
   onChange: (change: LeadChange) => void
   onLogCall: (call: LoggedCall) => void
+  /** Signed-in user's email, to show "you" instead of a name. */
+  me: string | null
   /** Shown at the top when the last save failed. */
   error: string | null
   onDismissError: () => void
@@ -49,7 +51,7 @@ type Props = {
 
 // Opens beside the table. Cards in the order the owner works through them:
 // identity, call, research, review, stage, then reference details.
-export function LeadDrawer({ lead, vertical, onClose, onChange, onLogCall, error, onDismissError, confirmation }: Props) {
+export function LeadDrawer({ lead, vertical, onClose, onChange, onLogCall, me, error, onDismissError, confirmation }: Props) {
   // The drawer only renders in the browser (after leads load), so reading
   // localStorage during the first render can't cause a hydration mismatch.
   const [width, setWidth] = useState(readWidth)
@@ -121,8 +123,8 @@ export function LeadDrawer({ lead, vertical, onClose, onChange, onLogCall, error
           <ResearchCard lead={lead} vertical={vertical} />
           <ReviewCard key={`review-${lead.id}`} lead={lead} onReview={onChange} locked={confirmation !== null} />
           <StageCard stage={lead.stage} onChange={(stage: Stage) => onChange({ kind: "stage", stage })} />
-          <ActivityCard leadId={lead.id} />
-          <DetailsCard lead={lead} vertical={vertical} />
+          <ActivityCard leadId={lead.id} me={me} />
+          <DetailsCard lead={lead} vertical={vertical} me={me} />
         </div>
       </div>
     </aside>

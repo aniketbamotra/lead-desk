@@ -18,6 +18,7 @@ export type ActivityRow = {
   outcome: string | null
   note: string | null
   created_at: string
+  created_by: string | null
 }
 
 function oneOf<T extends string>(values: readonly T[], value: string | null): T | null {
@@ -32,9 +33,11 @@ export function toActivity(row: ActivityRow): Activity {
     outcome: oneOf<CallOutcome>(CALL_OUTCOMES, row.outcome),
     note: row.note?.trim() || null,
     createdAt: row.created_at,
+    createdBy: row.created_by,
   }
 }
 
+// created_by is filled in by the database from the signed-in account.
 export function toActivityInsert(leadId: number, activity: NewActivity) {
   return { lead_id: leadId, type: activity.type, outcome: activity.outcome, note: activity.note }
 }

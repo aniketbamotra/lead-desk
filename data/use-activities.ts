@@ -23,7 +23,7 @@ export function useActivities(leadId: number) {
   })
 }
 
-type Variables = { leadId: number; activity: NewActivity }
+type Variables = { leadId: number; activity: NewActivity; actor: string | null }
 
 // Adds an activity. It shows in the timeline straight away and is removed
 // again if the save fails.
@@ -35,11 +35,17 @@ export function useAddActivity() {
       const { error } = await createClient().from(ACTIVITY_TABLE).insert(toActivityInsert(leadId, activity))
       if (error) throw new Error(`Couldn't save the activity: ${error.message}`)
     },
-    onMutate: async ({ leadId, activity }) => {
+    onMutate: async ({ leadId, activity, actor }) => {
       const key = queryKeys.activities(leadId)
       await queryClient.cancelQueries({ queryKey: key })
       const previous = queryClient.getQueryData<Activity[]>(key)
-      const optimistic: Activity = { id: -Date.now(), leadId, ...activity, createdAt: new Date().toISOString() }
+      const optimistic: Activity = {
+        id: -Date.now(),
+        leadId,
+        ...activity,
+        createdAt: new Date().toISOString(),
+        createdBy: actor,
+      }
       queryClient.setQueryData<Activity[]>(key, (list) => [optimistic, ...(list ?? [])])
       return { previous, key }
     },

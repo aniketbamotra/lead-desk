@@ -1,4 +1,5 @@
 import type { Lead } from "@/domain/lead"
+import { personName } from "@/lib/people"
 import { displayWebsite } from "@/lib/url"
 import type { VerticalConfig } from "@/verticals/types"
 import { DrawerCard } from "./drawer-card"
@@ -13,7 +14,7 @@ function formatDate(value: string | null) {
 
 type Row = { label: string; value: React.ReactNode }
 
-export function DetailsCard({ lead, vertical }: { lead: Lead; vertical: VerticalConfig }) {
+export function DetailsCard({ lead, vertical, me }: { lead: Lead; vertical: VerticalConfig; me: string | null }) {
   const { line1, line2, city, state, zip } = lead.address
   const address = [line1, line2, [city, [state, zip].filter(Boolean).join(" ")].filter(Boolean).join(", ")]
     .filter(Boolean)
@@ -42,7 +43,12 @@ export function DetailsCard({ lead, vertical }: { lead: Lead; vertical: Vertical
       ) : null,
     },
     { label: "Review notes", value: lead.reviewNotes },
-    { label: "Reviewed", value: formatDate(lead.reviewedAt) },
+    {
+      label: "Reviewed",
+      value: lead.reviewedAt
+        ? [formatDate(lead.reviewedAt), personName(lead.reviewedBy, me)].filter(Boolean).join(" by ")
+        : null,
+    },
     ...vertical.detailFields.map((field) => {
       const raw = lead.details[field.key] ?? null
       const value = field.format ? field.format(raw, lead) : raw === null ? null : String(raw)

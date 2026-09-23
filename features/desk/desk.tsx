@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { reviewSnapshot, type Lead, type LeadChange, type ReviewSnapshot } from "@/domain/lead"
 import { reviewStatusLabel, stageLabel } from "@/domain/vocabularies"
 import { useLeads } from "@/data/use-leads"
-import { useUpdateLead } from "@/data/use-update-lead"
+import { ReviewConflictError, useUpdateLead } from "@/data/use-update-lead"
 import { useAddActivity } from "@/data/use-activities"
 import type { LoggedCall } from "@/features/drawer/log-call-form"
 import { activeVertical } from "@/verticals"
@@ -116,14 +116,21 @@ export function Desk({ email, initialQuery }: { email: string | null; initialQue
     setSaveError(null)
     setFlash((current) => ({ id: lead.id, n: (current?.n ?? 0) + 1 }))
     updateLead.mutate(
-      { leadId: lead.id, change, now: new Date().toISOString() },
-      { onError: (error) => setSaveError(`${lead.name} wasn't saved. ${error.message}`) }
+      { lead, change, now: new Date().toISOString(), actor: email },
+      {
+        onError: (error) =>
+          setSaveError(
+            error instanceof ReviewConflictError
+              ? `${lead.name}: ${error.message}`
+              : `${lead.name} wasn't saved. ${error.message}`
+          ),
+      }
     )
   }
 
   function logActivity(lead: Lead, activity: Parameters<typeof addActivity.mutate>[0]["activity"]) {
     addActivity.mutate(
-      { leadId: lead.id, activity },
+      { leadId: lead.id, activity, actor: email },
       { onError: (error) => setSaveError(`${lead.name}: ${error.message}`) }
     )
   }
@@ -274,6 +281,7 @@ export function Desk({ email, initialQuery }: { email: string | null; initialQue
             onClose={() => select(null)}
             onChange={changeLead}
             onLogCall={logCall}
+            me={email}
             error={saveError}
             onDismissError={() => setSaveError(null)}
             confirmation={confirmation}

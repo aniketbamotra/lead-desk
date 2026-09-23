@@ -4,9 +4,18 @@ A private dashboard for running a freelance web/UX prospecting pipeline. It sits
 
 The first market is US dental practices. Other markets (other business categories) will follow once dental is saturated, using the same dashboard. See **Built for more than one market** below — this shapes how everything is built.
 
-Single user (the owner, a UX engineer). Runs locally for now.
+Two users: the owner (a UX engineer) and a teammate who does the research. See **Team and workflow**. Being deployed so the teammate can use it; see Current state.
 
 Read this whole file before starting work. At the end of every session, update **Current state** at the bottom.
+
+---
+
+## Team and workflow
+
+- **Teammate: research (the groundwork).** Works through the leads one by one. When automation found no website (or couldn't verify one), she searches for the business by name and decides: has website (with the URL), no website, disqualify, or skip. Most of the research is done by her.
+- **Owner: calling and outreach.** Once a good batch is researched, the owner calls the reviewed leads, logs calls, notes and follow-ups, and moves them through the pipeline.
+- This runs for a few weeks until the leads are properly enriched. **Later, the teammate may also start outreach.** When that happens, consider: who owns a lead for calling (an assignee field and a "mine" filter), and whether both of you might call the same lead. Attribution is already in place (`reviewed_by`, `lead_activities.created_by`).
+- Implications for the app: both users see each other's work (leads refresh every minute and on returning to the tab); review saves are guarded so a second review can't silently overwrite the first; every review and activity records who did it. Sign-ups stay off: the owner creates each account in Supabase.
 
 ---
 
@@ -209,7 +218,7 @@ On a network that inspects HTTPS traffic, the proxy re-signs connections with it
 
 ### v0.1 — research and first calls (build this first)
 
-- **Sign in** with email and password (Supabase Auth). Single user, so no magic link: it added redirect URLs, an email template, a confirm route and email rate limits for no benefit.
+- **Sign in** with email and password (Supabase Auth). A small team with accounts created by the owner, so no magic link: it added redirect URLs, an email template, a confirm route and email rate limits for no benefit.
 - **Leads table** reading `lead_queue`
   - Columns: business (name, trading/DBA name underneath if present), city/state, phone, website status, review status, stage, score, contact
   - Core filters (all verticals): state, city, website status, review status, stage, score range
@@ -401,6 +410,13 @@ _Last updated: end of session 2 (2026-09-23)._
 - `cn` must come from `@/lib/utils` (see Stack).
 - The owner's machine is behind HTTPS inspection; `NODE_EXTRA_CA_CERTS` is set up (see Local environment).
 
+### Two-person changes (session 3, not yet deployed)
+
+- `supabase/sql/004_attribution.sql` (owner to run): `leads.reviewed_by` set by a trigger when `review_status` changes (cleared when undone to pending), `lead_activities.created_by` defaulting to the signed-in email, `lead_queue` recreated with `reviewed_by`. Both come from `auth.jwt()`, not the browser.
+- Review and undo saves only apply if `review_status` still matches what the screen showed (`useUpdateLead`); otherwise the drawer says who reviewed it first and the list refreshes.
+- Leads refresh every 60s and on window focus. A successful save re-applies its change so a refresh that landed mid-save can't undo it on screen.
+- The drawer shows "Reviewed Sep 23 by Priya" / "by you" and "by …" on each activity (`lib/people.ts`).
+
 ### Known gaps
 
 - `J`/`K` follow the table's sort order in board view too.
@@ -411,4 +427,4 @@ _Last updated: end of session 2 (2026-09-23)._
 
 ### Next step
 
-A real session covering research and calls; the owner's notes set the priorities. Candidates after that: tests, auto-moving New to Contacted on a logged call, v0.3 (PageSpeed scores, n8n triggers via `app/api/`).
+Owner runs `004_attribution.sql` and picks hosting; then deploy (env vars, Supabase site URL, the teammate's account) and the teammate starts research. Candidates after that: tests, auto-moving New to Contacted on a logged call, lead ownership when the teammate starts outreach, v0.3 (PageSpeed scores, n8n triggers via `app/api/`).

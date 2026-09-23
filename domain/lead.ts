@@ -41,6 +41,8 @@ export type Lead = {
   reviewStatus: ReviewStatus
   reviewNotes: string | null
   reviewedAt: string | null
+  /** Email of whoever last reviewed it; set by the database. */
+  reviewedBy: string | null
   stage: Stage
   stageUpdatedAt: string | null
   nextFollowUp: string | null
@@ -52,12 +54,12 @@ export type Lead = {
 /** Every field a review action can touch, so it can be undone exactly. */
 export type ReviewSnapshot = Pick<
   Lead,
-  "reviewStatus" | "reviewNotes" | "reviewedAt" | "website" | "websiteStatus" | "websiteSource"
+  "reviewStatus" | "reviewNotes" | "reviewedAt" | "reviewedBy" | "website" | "websiteStatus" | "websiteSource"
 >
 
 export function reviewSnapshot(lead: Lead): ReviewSnapshot {
-  const { reviewStatus, reviewNotes, reviewedAt, website, websiteStatus, websiteSource } = lead
-  return { reviewStatus, reviewNotes, reviewedAt, website, websiteStatus, websiteSource }
+  const { reviewStatus, reviewNotes, reviewedAt, reviewedBy, website, websiteStatus, websiteSource } = lead
+  return { reviewStatus, reviewNotes, reviewedAt, reviewedBy, website, websiteStatus, websiteSource }
 }
 
 // A change a person makes to a lead. The adapter turns it into a database
@@ -72,7 +74,11 @@ export type LeadChange =
   /** Undo of a review: puts every review field back as it was. */
   | { kind: "restore"; snapshot: ReviewSnapshot }
 
-export function applyLeadChange(lead: Lead, change: LeadChange, now: string): Lead {
+/**
+ * The optimistic result of a change. `actor` is the signed-in user's email,
+ * matching what the database records.
+ */
+export function applyLeadChange(lead: Lead, change: LeadChange, now: string, actor: string | null): Lead {
   if (change.kind === "stage") {
     return { ...lead, stage: change.stage, stageUpdatedAt: now }
   }
@@ -83,7 +89,7 @@ export function applyLeadChange(lead: Lead, change: LeadChange, now: string): Le
     return { ...lead, nextFollowUp: change.date }
   }
 
-  const reviewed = { ...lead, reviewStatus: change.review, reviewedAt: now }
+  const reviewed = { ...lead, reviewStatus: change.review, reviewedAt: now, reviewedBy: actor }
   switch (change.review) {
     case "has_website":
       return { ...reviewed, website: change.website, websiteStatus: "found", websiteSource: "manual" }

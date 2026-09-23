@@ -46,6 +46,10 @@ export function useLeads(vertical: string) {
   return useQuery({
     queryKey: queryKeys.leads(vertical),
     queryFn: () => fetchLeads(vertical),
-    staleTime: 5 * 60_000,
+    // Two people work in the app: pick up the other person's reviews and
+    // calls every minute and when returning to the tab.
+    staleTime: 30_000,
+    refetchInterval: 60_000,
+    refetchOnWindowFocus: true,
   })
 }

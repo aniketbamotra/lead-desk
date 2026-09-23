@@ -53,6 +53,7 @@ export type LeadQueueRow = {
   review_status: string | null
   review_notes: string | null
   reviewed_at: string | null
+  reviewed_by: string | null
   status: string | null
   next_follow_up: string | null
   stage_updated_at: string | null
@@ -108,6 +109,7 @@ export function toLead(row: LeadQueueRow): Lead {
     reviewStatus: oneOf<ReviewStatus>(REVIEW_STATUSES, row.review_status, "pending"),
     reviewNotes: blankToNull(row.review_notes),
     reviewedAt: row.reviewed_at,
+    reviewedBy: blankToNull(row.reviewed_by),
     stage: oneOf<Stage>(STAGES, row.status, "new"),
     stageUpdatedAt: row.stage_updated_at,
     nextFollowUp: row.next_follow_up,
@@ -137,6 +139,7 @@ export function toLeadsUpdate(change: LeadChange, now: string): Record<string, s
   }
   if (change.kind === "restore") {
     // Undo puts back exactly what was there, including what automation wrote.
+    // reviewed_by is maintained by a database trigger, so it isn't written.
     const { snapshot } = change
     return {
       review_status: snapshot.reviewStatus,
