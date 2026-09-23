@@ -368,24 +368,47 @@ Stock shadcn look; drop shadows on cards; gradients as decoration; all-caps eyeb
 
 ## Current state
 
-- Session 0: this file created. No code yet.
-- Database: `leads` populated with ~1,180 dental practices. `lead_queue` view exists. Website enrichment in progress (running in batches of 200).
-- Not yet confirmed: `vertical` column, `lead_activities` table, RLS policies, `next_follow_up` / `stage_updated_at` columns — run the setup checklist, then recreate `lead_queue`.
-- Session 1: design direction and tokens confirmed (see Design brief; token sheet at https://claude.ai/artifact/9R15yNYgbYc4rCXWh7QJd5). Decided: after a review action (1–4) the drawer auto-advances to the next lead in the filtered set. Stack settled: shadcn + lucide (see Stack).
-- Session 2: stack switched from Vite to Next.js 16 App Router (reasons under Stack). v0.1 scaffold built:
-  - Project: Next.js 16.3, React 19.2, TS strict, Tailwind v4, shadcn (button, input, popover, switch restyled), tokens in `app/globals.css`, Hanken Grotesk via `next/font`.
-  - Auth: `@supabase/ssr` browser and server clients, `proxy.ts` session refresh and redirect, email + password sign-in page, `(desk)` layout re-checks the session with `getClaims`. (First built as a magic link, then switched to password at the owner's request; `/auth/confirm` was removed.)
-  - Data: `Lead` type, `LeadChange` + `applyLeadChange` for optimistic updates, `lead_queue` adapter (`toLead`, `toLeadsUpdate`), `useLeads` (pages through the 1,000-row limit), `useUpdateLead` (optimistic, rollback, and treats "0 rows updated" as an RLS failure). All review actions set `reviewed_at`, not only "Has website".
-  - Dental config: detail fields, "hide DSOs and duplicates" toggle (on by default), specialty filter.
-  - UI: top bar (rail toggle, name + vertical, search with `/`, account popover with sign out), count circles (pending review, unverified websites; each is a quick filter), filter rail (state, city, website, review, stage, score range, vertical filters), leads table (sort by score by default, sortable headers, selected row state, loading/error/empty states).
-  - Checks: `tsc`, `eslint` and `next build` pass. Smoke-tested with placeholder env: `/` redirects to `/sign-in` and sign-in renders. Not yet run against the real database.
-- Session 2 fixes after first real run: (1) invisible button text, caused by the bare `cn` package dropping `text-white` next to `text-control`; fixed with a configured `cn` in `lib/utils.ts`. (2) Sign-in and sign-out now do a full page load (`window.location.assign`), because the client router could replay a cached `/ → /sign-in` redirect and leave the owner on the sign-in page. Successful sign-in not yet confirmed by the owner. (3) `suppressHydrationWarning` on `<body>` for attributes added by browser extensions.
-- Session 2, first UI review against real data (1,181 leads, 930 pending): fixed all-caps registry text, tie-break sort by name (many leads share score 30; check the qual_score rules once the view definition is shared), removed "pending" emphasis, fixed column widths, header alignment, score/contact spacing, uniform 48px rows, sort hints on hover, clickable-looking filter chips, score inputs (Min/Max + range line), Reset only when filters changed, search as one pill with the `/` hint inside, dev badge moved bottom-right. tsc and lint pass; the owner still needs to check it visually (Claude's browser isn't signed in).
-- Session 2, second pass: removed the count circles; the header is now a rounded panel with outer margin like the rest. Built the detail drawer (`features/drawer/`): identity with J/K hint and close, call card (big phone number, Call `tel:` pill, Copy with `C`), research links (core set from `lib/research-links.ts` plus vertical links, and "Open <site>" when a website is set), review card (website field pre-filled with the automation's URL for unverified leads, `1`–`4` actions, disqualify asks for a note, Enter submits the URL), native stage select styled as a pill, and a details card (address, contact, website, review notes, reviewed date, vertical detail fields). Review actions auto-advance to the next lead in the on-screen order; stage changes don't. Save errors show at the top of the drawer. Keyboard: `/`, `J`/`K`, `1`–`4`, `C`, `Esc` work (`features/keyboard/use-key.ts`, ignored while typing). tsc and lint pass; not yet checked visually by Claude (its browser isn't signed in).
-- Database: setup columns added and `lead_queue` recreated with `vertical`, `next_follow_up`, `stage_updated_at` (`supabase/sql/001_lead_queue_new_columns.sql`, run by the owner). The adapter now filters by vertical. SQL for the view lives in `supabase/sql/`; keep it there, not only in chat (chat formatting strips `*`).
-- Scoring: `qual_score` before grading: 55 leads at 30, 53 at 25, 344 at 20, 275 at 15, the rest lower (hidden set excluded). `supabase/sql/002_qual_score_grading.sql` grades the signals and fixes the case-sensitive "management" rule and the area-code rule; written, not yet run.
-- Session 2, review feedback: the owner found the instant auto-advance too easy to miss and applied the same action to several leads by accident. Added the 700ms confirmation with locked actions, a fade on lead switch, the row flash, and undo (`Z`) via a `restore` LeadChange carrying a `ReviewSnapshot`. `Lead` now includes `websiteSource`.
-- Session 2, v0.1 gaps closed: filters live in the URL (repeated keys, only non-defaults; the server page passes the query to the desk so the first render matches), `?` shortcuts sheet (shadcn dialog restyled), desk shortcuts ignored inside open popovers and dialogs.
-- Session 2, v0.2 built: `domain/activity.ts`, `data/adapters/lead-activities.ts`, `data/use-activities.ts` (optimistic insert), `LeadChange` kind `follow_up`, `lib/dates.ts`, log-call form in the call card, activity card, Due chip, `features/board/lead-board.tsx` (50 cards per column, then "Show more"). Needs `supabase/sql/003_lead_activities.sql` run by the owner (idempotent). tsc and lint pass; not checked visually by Claude.
-- Known gaps: J/K follow the table's sort order in board view too. Undo covers the last review only. Logging a call doesn't move a lead from New to Contacted automatically (owner to decide).
-- Next step: owner runs `supabase/sql/003_lead_activities.sql`, then a real session covering research and calls; their notes set the priorities. Candidates after that: tests (Vitest, needs approval), moving New to Contacted automatically when a call is logged (owner's call), v0.3 PageSpeed scores and n8n triggers.
+_Last updated: end of session 2 (2026-09-23)._
+
+### Built
+
+- **v0.1 (research and first calls):** complete.
+  - Email + password sign-in (`@supabase/ssr` cookie sessions, `proxy.ts` refresh and redirect, `(desk)` layout re-checks with `getClaims`).
+  - Leads table: title-cased registry text, fixed column widths (Business 300px, Contact takes the rest), sort by score with name as tie-break, sort hints, uniform 48px rows.
+  - Filter rail: dental "hide DSOs and duplicates" (on by default), state, city, website, review, stage, score range, specialty. Filters, the selected lead and the view live in the URL.
+  - Detail drawer: call card, research links, review card (1–4, website pre-filled for unverified leads), stage select, activity, details. Resizable, width remembered.
+  - Review feedback: 700ms confirmation with actions locked before moving to the next lead (`J` skips), fade on lead switch, row flash, undo bar (`Z`) that restores every review field.
+  - Keyboard: `/`, `J`/`K`, `1`–`4`, `C`, `L`, `Z`, `Esc`, `?` (shortcuts sheet). Ignored while typing and inside popovers and dialogs.
+- **v0.2 (pipeline):** complete, not yet used in a real session.
+  - Log a call (`L`): outcome, note, follow-up date. Activity timeline in the drawer; stage changes logged automatically.
+  - Due chip in the list header; follow-up dates under the stage in the table (coral when due).
+  - Board view grouped by stage (`?view=board`), 50 cards per column then "Show more"; stages change in the drawer, no drag and drop.
+
+### Database (all scripts in `supabase/sql/`, all run by the owner)
+
+- `001_lead_queue_new_columns.sql`: `vertical`, `next_follow_up`, `stage_updated_at` on `leads`; `lead_queue` recreated with them. The adapter filters by vertical.
+- `002_qual_score_grading.sql`: graded `qual_score` (max 43, was 30). Before grading the spread was 55 leads at 30, 53 at 25, 344 at 20, 275 at 15, the rest lower (DSOs and duplicates excluded). Also fixed the case-sensitive "management" rule and the area-code rule that penalised leads with no contact phone.
+- `003_lead_activities.sql`: `lead_activities` table, index and RLS policy.
+- RLS read and update on `leads` work (reviews save).
+- Keep view SQL in `supabase/sql/`, not only in chat: chat formatting strips `*`.
+
+### Decisions worth remembering
+
+- Moved from Vite to Next.js for server-side secrets (see Stack). Magic link replaced by password: single user, no benefit.
+- Design direction changed in session 1 from the flat proposal to the owner's reference (soft grey shell, rounded panels, pills, coral accent).
+- Count circles under the header were built and then removed: they duplicated the filters and the table count.
+- Instant auto-advance caused mis-clicks on the next lead; hence the confirmation, lock and undo. Never switch leads silently.
+- `cn` must come from `@/lib/utils` (see Stack).
+- The owner's machine is behind HTTPS inspection; `NODE_EXTRA_CA_CERTS` is set up (see Local environment).
+
+### Known gaps
+
+- `J`/`K` follow the table's sort order in board view too.
+- Undo covers the last review only, not calls or follow-ups.
+- Logging a call doesn't move a lead from New to Contacted automatically (owner to decide).
+- No tests yet (Vitest would need the owner's approval).
+- Nothing checked visually by Claude since the drawer: its browser isn't signed in. The owner reviews in their browser.
+
+### Next step
+
+A real session covering research and calls; the owner's notes set the priorities. Candidates after that: tests, auto-moving New to Contacted on a logged call, v0.3 (PageSpeed scores, n8n triggers via `app/api/`).
