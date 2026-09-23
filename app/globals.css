@@ -1,0 +1,146 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/*
+  Lead Desk design tokens. Source of truth: the Design brief in CLAUDE.md.
+  Light theme only; dark mode is deferred.
+
+  Our palette is exposed as its own utilities (bg-shell, bg-panel, text-ink,
+  bg-coral, ...). shadcn's semantic names (primary, secondary, muted, accent,
+  border, ring, ...) are mapped onto the same palette so its components pick
+  it up. shadcn owns the name `accent`, so the brief's accent is `coral` here.
+*/
+
+@theme inline {
+  /* --font-hanken is set by next/font in app/layout.tsx */
+  --font-sans: var(--font-hanken), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-heading: var(--font-sans);
+
+  /* Palette */
+  --color-shell: var(--shell);
+  --color-surface: var(--surface);
+  --color-panel: var(--panel);
+  --color-panel-hover: var(--panel-hover);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-coral: var(--coral);
+  --color-coral-hover: var(--coral-hover);
+  --color-coral-bright: var(--coral-bright);
+  --color-coral-tint: var(--coral-tint);
+
+  /* shadcn semantic names */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Radius: rows 14, cards 18, panels 24, app frame 28. Controls use rounded-full. */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+  --radius-2xl: 28px;
+
+  /* Type scale (size / line height) */
+  --text-label: 12px;
+  --text-label--line-height: 16px;
+  --text-body: 13px;
+  --text-body--line-height: 18px;
+  --text-control: 14px;
+  --text-control--line-height: 20px;
+  --text-heading: 17px;
+  --text-heading--line-height: 22px;
+  --text-title: 20px;
+  --text-title--line-height: 26px;
+  --text-count: 22px;
+  --text-count--line-height: 28px;
+  --text-phone: 34px;
+  --text-phone--line-height: 38px;
+}
+
+:root {
+  --shell: #F6F6F5;
+  --surface: #FFFFFF;
+  --panel: #F3F3F2;
+  --panel-hover: #EAEAE8;
+  --line: #E8E8E6;
+  --line-strong: #929290;
+  --ink: #141414;
+  --ink-muted: #707070;
+  --coral: #B84E35;
+  --coral-hover: #A5452E;
+  --coral-bright: #D9694F;
+  --coral-tint: #FBEBE6;
+
+  --background: var(--surface);
+  --foreground: var(--ink);
+  --card: var(--surface);
+  --card-foreground: var(--ink);
+  --popover: var(--surface);
+  --popover-foreground: var(--ink);
+  --primary: var(--ink);
+  --primary-foreground: #FFFFFF;
+  --secondary: var(--panel);
+  --secondary-foreground: var(--ink);
+  --muted: var(--panel);
+  --muted-foreground: var(--ink-muted);
+  --accent: var(--panel);
+  --accent-foreground: var(--ink);
+  --destructive: var(--coral);
+  --border: var(--line);
+  --input: var(--line-strong);
+  --ring: var(--coral);
+  --radius: 18px;
+
+  color-scheme: light;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    @apply font-sans antialiased;
+  }
+  body {
+    @apply bg-surface text-ink text-body;
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+@utility tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
