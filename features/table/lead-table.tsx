@@ -4,8 +4,8 @@ import { ChevronDown, ChevronsUpDown, ChevronUp } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useEffect } from "react"
 import type { Lead } from "@/domain/lead"
-import { capitalize, formatCount } from "@/lib/format"
 import type { VerticalConfig } from "@/verticals/types"
+import { ListHeader } from "@/features/desk/list-header"
 import type { LeadTableInstance } from "./use-lead-table"
 
 const RIGHT_ALIGNED = new Set(["score"])
@@ -41,9 +41,11 @@ type Props = {
   flash: { id: number; n: number } | null
   /** Shown instead of rows when the filters match nothing. */
   emptyState: React.ReactNode
+  /** Controls on the right of the table header (due filter, view switch). */
+  actions?: React.ReactNode
 }
 
-export function LeadTable({ table, totalCount, vertical, selectedId, onSelect, flash, emptyState }: Props) {
+export function LeadTable({ table, totalCount, vertical, selectedId, onSelect, flash, emptyState, actions }: Props) {
   const rows = table.getRowModel().rows
 
   // Keep the selected row visible when J/K moves past the edge.
@@ -54,14 +56,7 @@ export function LeadTable({ table, totalCount, vertical, selectedId, onSelect, f
 
   return (
     <section aria-labelledby="lead-table-title" className="flex min-h-0 min-w-0 flex-1 flex-col rounded-xl bg-panel p-2">
-      <div className="flex flex-wrap items-baseline gap-2 px-3 pt-2 pb-3">
-        <h2 id="lead-table-title" className="text-heading font-normal">
-          {capitalize(vertical.nouns.plural)}
-        </h2>
-        <span className="tnum text-ink-muted" aria-live="polite">
-          {formatCount(rows.length)} of {formatCount(totalCount)}
-        </span>
-      </div>
+      <ListHeader id="lead-table-title" vertical={vertical} shown={rows.length} total={totalCount} actions={actions} />
 
       <div className="min-h-0 flex-1 overflow-auto">
         <table className="w-full min-w-[1210px] table-fixed border-separate border-spacing-y-0.5">

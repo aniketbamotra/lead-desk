@@ -2,7 +2,9 @@ import { createColumnHelper } from "@tanstack/react-table"
 import { StatusMark } from "@/components/ui/status-mark"
 import type { Lead } from "@/domain/lead"
 import { reviewStatusLabel, stageLabel, stageNeedsAction } from "@/domain/vocabularies"
+import { formatShortDay, todayISO } from "@/lib/dates"
 import { formatPlace } from "@/lib/format"
+import { cn } from "@/lib/utils"
 import type { leadTableFeatures } from "./table-features"
 
 const helper = createColumnHelper<typeof leadTableFeatures, Lead>()
@@ -38,11 +40,22 @@ export const leadColumns = helper.columns([
   helper.accessor("stage", {
     header: "Stage",
     sortFn: "text",
-    cell: (info) => (
-      <span className={stageNeedsAction.has(info.getValue()) ? "font-medium" : undefined}>
-        {stageLabel[info.getValue()]}
-      </span>
-    ),
+    cell: (info) => {
+      const followUp = info.row.original.nextFollowUp
+      const due = followUp !== null && followUp <= todayISO()
+      return (
+        <span className="grid min-w-0">
+          <span className={stageNeedsAction.has(info.getValue()) ? "font-medium" : undefined}>
+            {stageLabel[info.getValue()]}
+          </span>
+          {followUp && (
+            <span className={cn("tnum truncate text-label", due ? "text-coral" : "text-ink-muted")}>
+              {due ? "Due" : "Follow up"} {formatShortDay(followUp)}
+            </span>
+          )}
+        </span>
+      )
+    },
   }),
   helper.accessor("score", {
     header: "Score",

@@ -230,18 +230,18 @@ On a network that inspects HTTPS traffic, the proxy re-signs connections with it
     - **Skip** → `review_status='skipped'`
   - Call: copy phone number, and a `tel:` link
   - Stage selector (writes `status`, `stage_updated_at`)
-- **Keyboard**: `J`/`K` next/previous lead within the current filtered set, `1`–`4` review actions, `C` copy phone, `/` focus search, `Esc` close drawer. Show shortcuts somewhere discoverable.
+- **Keyboard**: `J`/`K` next/previous lead within the current filtered set, `1`–`4` review actions, `C` copy phone, `/` focus search, `Esc` close drawer, `Z` undo the last review, `L` log a call, `?` shortcuts sheet (also the keyboard button in the header).
 
 URL formats:
 - `https://www.google.com/search?q=${encodeURIComponent(query)}`
 - `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`
 
-### v0.2 — pipeline
+### v0.2 — pipeline (built in session 2)
 
-- Log a call from the drawer: outcome + note → `lead_activities`, optional `next_follow_up`
-- Activity timeline in the drawer
-- "Due" view: leads where `next_follow_up <= today`
-- Board view grouped by stage
+- Log a call from the drawer: outcome + note → `lead_activities`, optional `next_follow_up` (quick picks: tomorrow, in 3 days, next week, or a date)
+- Activity timeline in the drawer; stage changes are logged there automatically
+- "Due" filter chip in the list header: leads where `next_follow_up <= today`, within the other filters. Follow-up dates also show under the stage in the table (coral when due)
+- Board view grouped by stage (Table / Board switch in the list header, `?view=board`). No drag and drop: stages change in the drawer
 
 ### v0.3 — audit and automation
 
@@ -385,5 +385,7 @@ Stock shadcn look; drop shadows on cards; gradients as decoration; all-caps eyeb
 - Database: setup columns added and `lead_queue` recreated with `vertical`, `next_follow_up`, `stage_updated_at` (`supabase/sql/001_lead_queue_new_columns.sql`, run by the owner). The adapter now filters by vertical. SQL for the view lives in `supabase/sql/`; keep it there, not only in chat (chat formatting strips `*`).
 - Scoring: `qual_score` before grading: 55 leads at 30, 53 at 25, 344 at 20, 275 at 15, the rest lower (hidden set excluded). `supabase/sql/002_qual_score_grading.sql` grades the signals and fixes the case-sensitive "management" rule and the area-code rule; written, not yet run.
 - Session 2, review feedback: the owner found the instant auto-advance too easy to miss and applied the same action to several leads by accident. Added the 700ms confirmation with locked actions, a fade on lead switch, the row flash, and undo (`Z`) via a `restore` LeadChange carrying a `ReviewSnapshot`. `Lead` now includes `websiteSource`.
-- Known gaps: Filters aren't in the URL yet. No `?` shortcuts sheet yet (keys are shown on the buttons and in the drawer header). Esc while a filter popover is open may also close the drawer.
-- Next step: owner creates `.env.local` (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`), adds their user in Supabase (see Supabase auth setup), runs the database setup checklist, and shares the `lead_queue` view definition (`select pg_get_viewdef('public.lead_queue', true);`). Then the owner reviews the drawer with real data; after that, the `?` shortcuts sheet, the status-change row flash, and v0.2 (call logging, activity timeline, due view, board).
+- Session 2, v0.1 gaps closed: filters live in the URL (repeated keys, only non-defaults; the server page passes the query to the desk so the first render matches), `?` shortcuts sheet (shadcn dialog restyled), desk shortcuts ignored inside open popovers and dialogs.
+- Session 2, v0.2 built: `domain/activity.ts`, `data/adapters/lead-activities.ts`, `data/use-activities.ts` (optimistic insert), `LeadChange` kind `follow_up`, `lib/dates.ts`, log-call form in the call card, activity card, Due chip, `features/board/lead-board.tsx` (50 cards per column, then "Show more"). Needs `supabase/sql/003_lead_activities.sql` run by the owner (idempotent). tsc and lint pass; not checked visually by Claude.
+- Known gaps: J/K follow the table's sort order in board view too. Undo covers the last review only. Logging a call doesn't move a lead from New to Contacted automatically (owner to decide).
+- Next step: owner runs `supabase/sql/003_lead_activities.sql`, then a real session covering research and calls; their notes set the priorities. Candidates after that: tests (Vitest, needs approval), moving New to Contacted automatically when a call is logged (owner's call), v0.3 PageSpeed scores and n8n triggers.

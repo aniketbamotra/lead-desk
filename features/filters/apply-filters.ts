@@ -1,4 +1,5 @@
 import type { Lead } from "@/domain/lead"
+import { todayISO } from "@/lib/dates"
 import { digitsOnly } from "@/lib/format"
 import type { VerticalConfig } from "@/verticals/types"
 import type { Filters, WebsiteFilterValue } from "./filters"
@@ -22,13 +23,6 @@ function matchesSearch(lead: Lead, search: string) {
 
 function inList<T>(list: T[], value: T) {
   return list.length === 0 || list.includes(value)
-}
-
-/** Today as YYYY-MM-DD in local time, to compare with date-only follow-ups. */
-export function todayISO() {
-  const now = new Date()
-  const pad = (n: number) => String(n).padStart(2, "0")
-  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
 }
 
 export function isDue(lead: Lead, today = todayISO()) {

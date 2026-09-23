@@ -3,12 +3,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { reviewSnapshot, type Lead, type LeadChange, type ReviewSnapshot } from "@/domain/lead"
-import { reviewStatusLabel } from "@/domain/vocabularies"
+import { reviewStatusLabel, stageLabel } from "@/domain/vocabularies"
 import { useLeads } from "@/data/use-leads"
 import { useUpdateLead } from "@/data/use-update-lead"
+import { useAddActivity } from "@/data/use-activities"
+import type { LoggedCall } from "@/features/drawer/log-call-form"
 import { activeVertical } from "@/verticals"
 import { LeadDrawer } from "@/features/drawer/lead-drawer"
-import { applyFilters } from "@/features/filters/apply-filters"
+import { applyFilters, isDue } from "@/features/filters/apply-filters"
 import { FilterRail } from "@/features/filters/filter-rail"
 import { useFilters } from "@/features/filters/use-filters"
 import { useKeys } from "@/features/keyboard/use-key"
@@ -16,6 +18,10 @@ import { LeadTable } from "@/features/table/lead-table"
 import { useLeadTable } from "@/features/table/use-lead-table"
 import { TopBar } from "./top-bar"
 import { UndoBar } from "./undo-bar"
+import { ViewSwitch, type DeskView } from "./view-switch"
+import { LeadBoard } from "@/features/board/lead-board"
+import { Chip } from "@/components/ui/chip"
+import { formatCount } from "@/lib/format"
 import { ShortcutsDialog } from "@/features/keyboard/shortcuts-dialog"
 
 const EMPTY: never[] = []
@@ -25,6 +31,10 @@ const EMPTY: never[] = []
 const CONFIRM_MS = 700
 
 type LastReview = { leadId: number; name: string; label: string; before: ReviewSnapshot }
+
+function viewFromQuery(query: string): DeskView {
+  return new URLSearchParams(query).get("view") === "board" ? "board" : "table"
+}
 
 function leadFromQuery(query: string) {
   const value = Number(new URLSearchParams(query).get("lead"))
@@ -43,6 +53,7 @@ export function Desk({ email, initialQuery }: { email: string | null; initialQue
   const leadsQuery = useLeads(vertical.id)
   const leads = leadsQuery.data ?? EMPTY
   const updateLead = useUpdateLead(vertical.id)
+  const addActivity = useAddActivity()
   const filtersApi = useFilters(vertical, initialQuery)
   const { filters, update } = filtersApi
 
@@ -54,6 +65,15 @@ export function Desk({ email, initialQuery }: { email: string | null; initialQue
   const [lastReview, setLastReview] = useState<LastReview | null>(null)
   const [flash, setFlash] = useState<{ id: number; n: number } | null>(null)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
+  const [view, setView] = useState<DeskView>(() => viewFromQuery(initialQuery))
+
+  // Keep the view in the URL alongside filters and the selected lead.
+  useEffect(() => {
+    const url = new URL(window.location.href)
+    if (view === "board") url.searchParams.set("view", "board")
+    else url.searchParams.delete("view")
+    window.history.replaceState(window.history.state, "", url)
+  }, [view])
   const advanceTimer = useRef<number | null>(null)
   const searchRef = useRef<HTMLInputElement>(null)
 
@@ -63,6 +83,12 @@ export function Desk({ email, initialQuery }: { email: string | null; initialQue
 
   const filtered = useMemo(() => applyFilters(leads, filters, vertical), [leads, filters, vertical])
   const table = useLeadTable(filtered)
+
+  // Follow-ups due today or earlier, within the other active filters.
+  const dueCount = useMemo(
+    () => applyFilters(leads, { ...filters, dueOnly: false }, vertical).filter((lead) => isDue(lead)).length,
+    [leads, filters, vertical]
+  )
   // The order on screen (filtered + sorted). J/K and auto-advance follow it.
   const orderedIds = table.getRowModel().rows.map((row) => row.original.id)
 
@@ -95,10 +121,35 @@ export function Desk({ email, initialQuery }: { email: string | null; initialQue
     )
   }
 
+  function logActivity(lead: Lead, activity: Parameters<typeof addActivity.mutate>[0]["activity"]) {
+    addActivity.mutate(
+      { leadId: lead.id, activity },
+      { onError: (error) => setSaveError(`${lead.name}: ${error.message}`) }
+    )
+  }
+
+  function logCall(call: LoggedCall) {
+    if (!selectedLead) return
+    const lead = selectedLead
+    setSaveError(null)
+    logActivity(lead, { type: "call", outcome: call.outcome, note: call.note })
+    if (call.followUp !== lead.nextFollowUp) save(lead, { kind: "follow_up", date: call.followUp })
+    else setFlash((current) => ({ id: lead.id, n: (current?.n ?? 0) + 1 }))
+  }
+
   function changeLead(change: LeadChange) {
     if (!selectedLead || confirmation !== null) return
     const lead = selectedLead
+    if (change.kind === "stage" && change.stage === lead.stage) return
     save(lead, change)
+    if (change.kind === "stage") {
+      // Stage changes go in the activity log so the timeline tells the story.
+      logActivity(lead, {
+        type: "stage_change",
+        outcome: null,
+        note: `Moved from ${stageLabel[lead.stage]} to ${stageLabel[change.stage]}`,
+      })
+    }
     if (change.kind !== "review") return
 
     // Show what happened, then move on to the next lead in the list as it
@@ -131,6 +182,31 @@ export function Desk({ email, initialQuery }: { email: string | null; initialQue
     "?": () => setShortcutsOpen(true),
     escape: () => select(null),
   })
+
+  const listActions = (
+    <>
+      <Chip
+        pressed={filters.dueOnly}
+        onClick={() => update("dueOnly", !filters.dueOnly)}
+        title="Leads whose follow-up date is today or earlier"
+      >
+        Due <span className="tnum">{formatCount(dueCount)}</span>
+      </Chip>
+      <ViewSwitch view={view} onChange={setView} />
+    </>
+  )
+  const listEmptyState = (
+    <div className="grid justify-items-start gap-3">
+      <p className="text-control">
+        {filters.dueOnly
+          ? "No follow-ups are due. Log a call with a follow-up date and it shows up here on that day."
+          : `No ${vertical.nouns.plural} match these filters.`}
+      </p>
+      <Button variant="secondary" size="sm" onClick={filtersApi.reset}>
+        Reset filters
+      </Button>
+    </div>
+  )
 
   return (
     <div className="flex h-dvh flex-col gap-3 bg-surface p-3">
@@ -167,6 +243,17 @@ export function Desk({ email, initialQuery }: { email: string | null; initialQue
             title={`No ${vertical.nouns.plural} yet`}
             body="The discovery workflow hasn't added any leads, or this account can't read them. Check the RLS read policy on leads."
           />
+        ) : view === "board" ? (
+          <LeadBoard
+            leads={table.getRowModel().rows.map((row) => row.original)}
+            totalCount={leads.length}
+            vertical={vertical}
+            selectedId={selectedId}
+            onSelect={select}
+            flash={flash}
+            actions={listActions}
+            emptyState={listEmptyState}
+          />
         ) : (
           <LeadTable
             table={table}
@@ -175,14 +262,8 @@ export function Desk({ email, initialQuery }: { email: string | null; initialQue
             selectedId={selectedId}
             onSelect={select}
             flash={flash}
-            emptyState={
-              <div className="grid justify-items-start gap-3">
-                <p className="text-control">No {vertical.nouns.plural} match these filters.</p>
-                <Button variant="secondary" size="sm" onClick={filtersApi.reset}>
-                  Reset filters
-                </Button>
-              </div>
-            }
+            actions={listActions}
+            emptyState={listEmptyState}
           />
         )}
 
@@ -192,6 +273,7 @@ export function Desk({ email, initialQuery }: { email: string | null; initialQue
             vertical={vertical}
             onClose={() => select(null)}
             onChange={changeLead}
+            onLogCall={logCall}
             error={saveError}
             onDismissError={() => setSaveError(null)}
             confirmation={confirmation}

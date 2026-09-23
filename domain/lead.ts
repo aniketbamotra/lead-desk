@@ -67,6 +67,8 @@ export type LeadChange =
   | { kind: "review"; review: "no_website" | "skipped" }
   | { kind: "review"; review: "disqualified"; note: string }
   | { kind: "stage"; stage: Stage }
+  /** Set or clear the follow-up date (YYYY-MM-DD). */
+  | { kind: "follow_up"; date: string | null }
   /** Undo of a review: puts every review field back as it was. */
   | { kind: "restore"; snapshot: ReviewSnapshot }
 
@@ -76,6 +78,9 @@ export function applyLeadChange(lead: Lead, change: LeadChange, now: string): Le
   }
   if (change.kind === "restore") {
     return { ...lead, ...change.snapshot }
+  }
+  if (change.kind === "follow_up") {
+    return { ...lead, nextFollowUp: change.date }
   }
 
   const reviewed = { ...lead, reviewStatus: change.review, reviewedAt: now }

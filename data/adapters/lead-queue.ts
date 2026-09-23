@@ -132,6 +132,9 @@ export function toLeadsUpdate(change: LeadChange, now: string): Record<string, s
   if (change.kind === "stage") {
     return { status: change.stage, stage_updated_at: now }
   }
+  if (change.kind === "follow_up") {
+    return { next_follow_up: change.date }
+  }
   if (change.kind === "restore") {
     // Undo puts back exactly what was there, including what automation wrote.
     const { snapshot } = change

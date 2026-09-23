@@ -6,7 +6,9 @@ import { Button } from "@/components/ui/button"
 import { Kbd } from "@/components/ui/kbd"
 import type { Lead, LeadChange, Stage } from "@/domain/lead"
 import type { VerticalConfig } from "@/verticals/types"
+import { ActivityCard } from "./activity-card"
 import { CallCard } from "./call-card"
+import type { LoggedCall } from "./log-call-form"
 import { DetailsCard } from "./details-card"
 import { ResearchCard } from "./research-card"
 import { ResizeHandle } from "./resize-handle"
@@ -33,6 +35,7 @@ type Props = {
   vertical: VerticalConfig
   onClose: () => void
   onChange: (change: LeadChange) => void
+  onLogCall: (call: LoggedCall) => void
   /** Shown at the top when the last save failed. */
   error: string | null
   onDismissError: () => void
@@ -46,7 +49,7 @@ type Props = {
 
 // Opens beside the table. Cards in the order the owner works through them:
 // identity, call, research, review, stage, then reference details.
-export function LeadDrawer({ lead, vertical, onClose, onChange, error, onDismissError, confirmation }: Props) {
+export function LeadDrawer({ lead, vertical, onClose, onChange, onLogCall, error, onDismissError, confirmation }: Props) {
   // The drawer only renders in the browser (after leads load), so reading
   // localStorage during the first render can't cause a hydration mismatch.
   const [width, setWidth] = useState(readWidth)
@@ -109,10 +112,16 @@ export function LeadDrawer({ lead, vertical, onClose, onChange, error, onDismiss
         )}
 
         <div className="grid min-h-0 flex-1 content-start gap-2 overflow-y-auto px-2 pb-2">
-          <CallCard key={`call-${lead.id}`} lead={lead} />
+          <CallCard
+            key={`call-${lead.id}`}
+            lead={lead}
+            onLogCall={onLogCall}
+            onClearFollowUp={() => onChange({ kind: "follow_up", date: null })}
+          />
           <ResearchCard lead={lead} vertical={vertical} />
           <ReviewCard key={`review-${lead.id}`} lead={lead} onReview={onChange} locked={confirmation !== null} />
           <StageCard stage={lead.stage} onChange={(stage: Stage) => onChange({ kind: "stage", stage })} />
+          <ActivityCard leadId={lead.id} />
           <DetailsCard lead={lead} vertical={vertical} />
         </div>
       </div>
