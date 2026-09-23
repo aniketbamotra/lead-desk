@@ -36,6 +36,8 @@ export type Lead = {
   website: string | null
   /** What automation found. `null` means not checked yet. */
   websiteStatus: WebsiteStatus | null
+  /** How the website was found: automation's guess or a person. */
+  websiteSource: string | null
   reviewStatus: ReviewStatus
   reviewNotes: string | null
   reviewedAt: string | null
@@ -47,6 +49,17 @@ export type Lead = {
   details: Record<string, DetailValue>
 }
 
+/** Every field a review action can touch, so it can be undone exactly. */
+export type ReviewSnapshot = Pick<
+  Lead,
+  "reviewStatus" | "reviewNotes" | "reviewedAt" | "website" | "websiteStatus" | "websiteSource"
+>
+
+export function reviewSnapshot(lead: Lead): ReviewSnapshot {
+  const { reviewStatus, reviewNotes, reviewedAt, website, websiteStatus, websiteSource } = lead
+  return { reviewStatus, reviewNotes, reviewedAt, website, websiteStatus, websiteSource }
+}
+
 // A change a person makes to a lead. The adapter turns it into a database
 // write; applyLeadChange gives the optimistic result.
 export type LeadChange =
@@ -54,16 +67,21 @@ export type LeadChange =
   | { kind: "review"; review: "no_website" | "skipped" }
   | { kind: "review"; review: "disqualified"; note: string }
   | { kind: "stage"; stage: Stage }
+  /** Undo of a review: puts every review field back as it was. */
+  | { kind: "restore"; snapshot: ReviewSnapshot }
 
 export function applyLeadChange(lead: Lead, change: LeadChange, now: string): Lead {
   if (change.kind === "stage") {
     return { ...lead, stage: change.stage, stageUpdatedAt: now }
   }
+  if (change.kind === "restore") {
+    return { ...lead, ...change.snapshot }
+  }
 
   const reviewed = { ...lead, reviewStatus: change.review, reviewedAt: now }
   switch (change.review) {
     case "has_website":
-      return { ...reviewed, website: change.website, websiteStatus: "found" }
+      return { ...reviewed, website: change.website, websiteStatus: "found", websiteSource: "manual" }
     case "disqualified":
       return { ...reviewed, reviewNotes: change.note }
     default:

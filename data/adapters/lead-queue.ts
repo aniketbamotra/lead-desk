@@ -49,6 +49,7 @@ export type LeadQueueRow = {
   years_since_update: number | null
   website: string | null
   website_status: string | null
+  website_source: string | null
   review_status: string | null
   review_notes: string | null
   reviewed_at: string | null
@@ -103,6 +104,7 @@ export function toLead(row: LeadQueueRow): Lead {
     },
     website: blankToNull(row.website),
     websiteStatus: oneOf<WebsiteStatus>(WEBSITE_STATUSES, row.website_status, null),
+    websiteSource: blankToNull(row.website_source),
     reviewStatus: oneOf<ReviewStatus>(REVIEW_STATUSES, row.review_status, "pending"),
     reviewNotes: blankToNull(row.review_notes),
     reviewedAt: row.reviewed_at,
@@ -126,9 +128,21 @@ export function toLead(row: LeadQueueRow): Lead {
 }
 
 /** The `leads` columns to write for a change. Only these fields are touched. */
-export function toLeadsUpdate(change: LeadChange, now: string): Record<string, string> {
+export function toLeadsUpdate(change: LeadChange, now: string): Record<string, string | null> {
   if (change.kind === "stage") {
     return { status: change.stage, stage_updated_at: now }
+  }
+  if (change.kind === "restore") {
+    // Undo puts back exactly what was there, including what automation wrote.
+    const { snapshot } = change
+    return {
+      review_status: snapshot.reviewStatus,
+      review_notes: snapshot.reviewNotes,
+      reviewed_at: snapshot.reviewedAt,
+      website: snapshot.website ?? "", // no website is stored as ''
+      website_status: snapshot.websiteStatus,
+      website_source: snapshot.websiteSource,
+    }
   }
 
   const reviewed = { review_status: change.review, reviewed_at: now }

@@ -1,8 +1,9 @@
 "use client"
 
-import { useCallback, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
-import type { LeadChange } from "@/domain/lead"
+import { reviewSnapshot, type Lead, type LeadChange, type ReviewSnapshot } from "@/domain/lead"
+import { reviewStatusLabel } from "@/domain/vocabularies"
 import { useLeads } from "@/data/use-leads"
 import { useUpdateLead } from "@/data/use-update-lead"
 import { activeVertical } from "@/verticals"
@@ -14,8 +15,15 @@ import { useKeys } from "@/features/keyboard/use-key"
 import { LeadTable } from "@/features/table/lead-table"
 import { useLeadTable } from "@/features/table/use-lead-table"
 import { TopBar } from "./top-bar"
+import { UndoBar } from "./undo-bar"
 
 const EMPTY: never[] = []
+
+// How long the drawer shows "Has website" (etc.) before moving on. Long
+// enough to see, short enough not to slow a fast session. J skips it.
+const CONFIRM_MS = 700
+
+type LastReview = { leadId: number; name: string; label: string; before: ReviewSnapshot }
 
 function readLeadParam() {
   if (typeof window === "undefined") return null
@@ -43,7 +51,15 @@ export function Desk({ email }: { email: string | null }) {
   // Safe to read on first render: nothing selected shows until leads load.
   const [selectedId, setSelectedId] = useState<number | null>(readLeadParam)
   const [saveError, setSaveError] = useState<string | null>(null)
+  const [confirmation, setConfirmation] = useState<string | null>(null)
+  const [lastReview, setLastReview] = useState<LastReview | null>(null)
+  const [flash, setFlash] = useState<{ id: number; n: number } | null>(null)
+  const advanceTimer = useRef<number | null>(null)
   const searchRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => () => {
+    if (advanceTimer.current !== null) window.clearTimeout(advanceTimer.current)
+  }, [])
 
   const filtered = useMemo(() => applyFilters(leads, filters, vertical), [leads, filters, vertical])
   const table = useLeadTable(filtered)
@@ -51,6 +67,12 @@ export function Desk({ email }: { email: string | null }) {
   const orderedIds = table.getRowModel().rows.map((row) => row.original.id)
 
   const select = useCallback((id: number | null) => {
+    // Any navigation cancels a pending auto-advance.
+    if (advanceTimer.current !== null) {
+      window.clearTimeout(advanceTimer.current)
+      advanceTimer.current = null
+    }
+    setConfirmation(null)
     setSelectedId(id)
     writeLeadParam(id)
   }, [])
@@ -64,29 +86,48 @@ export function Desk({ email }: { email: string | null }) {
     if (next >= 0 && next < orderedIds.length) select(orderedIds[next])
   }
 
-  function changeLead(change: LeadChange) {
-    if (!selectedLead) return
-    const lead = selectedLead
+  function save(lead: Lead, change: LeadChange) {
     setSaveError(null)
-
-    // Review actions move on to the next lead in the list as it was before
-    // the change (the reviewed lead may drop out of the current filter).
-    if (change.kind === "review") {
-      const index = orderedIds.indexOf(lead.id)
-      const nextId = index === -1 ? null : (orderedIds[index + 1] ?? orderedIds[index - 1] ?? null)
-      select(nextId)
-    }
-
+    setFlash((current) => ({ id: lead.id, n: (current?.n ?? 0) + 1 }))
     updateLead.mutate(
       { leadId: lead.id, change, now: new Date().toISOString() },
       { onError: (error) => setSaveError(`${lead.name} wasn't saved. ${error.message}`) }
     )
   }
 
+  function changeLead(change: LeadChange) {
+    if (!selectedLead || confirmation !== null) return
+    const lead = selectedLead
+    save(lead, change)
+    if (change.kind !== "review") return
+
+    // Show what happened, then move on to the next lead in the list as it
+    // was before the change (the reviewed lead may drop out of the filter).
+    const label = reviewStatusLabel[change.review]
+    setConfirmation(label)
+    setLastReview({ leadId: lead.id, name: lead.name, label, before: reviewSnapshot(lead) })
+    const index = orderedIds.indexOf(lead.id)
+    const nextId = index === -1 ? null : (orderedIds[index + 1] ?? orderedIds[index - 1] ?? null)
+    advanceTimer.current = window.setTimeout(() => {
+      advanceTimer.current = null
+      select(nextId)
+    }, CONFIRM_MS)
+  }
+
+  function undo() {
+    if (!lastReview) return
+    const lead = leads.find((l) => l.id === lastReview.leadId)
+    setLastReview(null)
+    if (!lead) return
+    save(lead, { kind: "restore", snapshot: lastReview.before })
+    select(lead.id)
+  }
+
   useKeys({
     "/": () => searchRef.current?.focus(),
     j: () => move(1),
     k: () => move(-1),
+    z: undo,
     escape: () => select(null),
   })
 
@@ -131,6 +172,7 @@ export function Desk({ email }: { email: string | null }) {
             vertical={vertical}
             selectedId={selectedId}
             onSelect={select}
+            flash={flash}
             emptyState={
               <div className="grid justify-items-start gap-3">
                 <p className="text-control">No {vertical.nouns.plural} match these filters.</p>
@@ -150,9 +192,21 @@ export function Desk({ email }: { email: string | null }) {
             onChange={changeLead}
             error={saveError}
             onDismissError={() => setSaveError(null)}
+            confirmation={confirmation}
           />
         )}
       </main>
+
+      {lastReview && (
+        <div className="pointer-events-none fixed inset-x-0 bottom-6 z-40 flex justify-center px-4">
+          <UndoBar
+            key={lastReview.leadId}
+            message={`${lastReview.name}: ${lastReview.label}`}
+            onUndo={undo}
+            onDismiss={() => setLastReview(null)}
+          />
+        </div>
+      )}
     </div>
   )
 }

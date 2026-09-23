@@ -37,11 +37,13 @@ type Props = {
   vertical: VerticalConfig
   selectedId: number | null
   onSelect: (id: number) => void
+  /** A row whose status just changed, with a counter so repeats replay. */
+  flash: { id: number; n: number } | null
   /** Shown instead of rows when the filters match nothing. */
   emptyState: React.ReactNode
 }
 
-export function LeadTable({ table, totalCount, vertical, selectedId, onSelect, emptyState }: Props) {
+export function LeadTable({ table, totalCount, vertical, selectedId, onSelect, flash, emptyState }: Props) {
   const rows = table.getRowModel().rows
 
   // Keep the selected row visible when J/K moves past the edge.
@@ -111,13 +113,19 @@ export function LeadTable({ table, totalCount, vertical, selectedId, onSelect, e
             {rows.map((row) => {
               const lead = row.original
               const selected = lead.id === selectedId
+              const flashing = flash?.id === lead.id
               return (
                 <tr
-                  key={row.id}
+                  // Changing the key replays the flash if the same row changes twice.
+                  key={flashing ? `${row.id}-${flash.n}` : row.id}
                   data-lead-id={lead.id}
                   aria-selected={selected}
                   onClick={() => onSelect(lead.id)}
-                  className={cn("group/row cursor-pointer", selected ? "bg-surface" : "hover:bg-surface/60")}
+                  className={cn(
+                    "group/row cursor-pointer",
+                    selected ? "bg-surface" : "hover:bg-surface/60",
+                    flashing && "animate-row-flash"
+                  )}
                 >
                   {row.getAllCells().map((cell) => (
                     <td

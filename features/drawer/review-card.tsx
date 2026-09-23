@@ -12,7 +12,16 @@ import { DrawerCard } from "./drawer-card"
 type ReviewChange = Extract<LeadChange, { kind: "review" }>
 
 // Keyed by lead id in the drawer, so its form state resets for each lead.
-export function ReviewCard({ lead, onReview }: { lead: Lead; onReview: (change: ReviewChange) => void }) {
+export function ReviewCard({
+  lead,
+  onReview,
+  locked,
+}: {
+  lead: Lead
+  onReview: (change: ReviewChange) => void
+  /** True while a review action is being confirmed; nothing can be pressed. */
+  locked: boolean
+}) {
   const urlId = useId()
   const noteId = useId()
   const urlRef = useRef<HTMLInputElement>(null)
@@ -47,12 +56,15 @@ export function ReviewCard({ lead, onReview }: { lead: Lead; onReview: (change: 
     onReview({ kind: "review", review: "disqualified", note: note.trim() })
   }
 
-  useKeys({
-    "1": markHasWebsite,
-    "2": () => onReview({ kind: "review", review: "no_website" }),
-    "3": () => setDisqualifying(true),
-    "4": () => onReview({ kind: "review", review: "skipped" }),
-  })
+  useKeys(
+    {
+      "1": markHasWebsite,
+      "2": () => onReview({ kind: "review", review: "no_website" }),
+      "3": () => setDisqualifying(true),
+      "4": () => onReview({ kind: "review", review: "skipped" }),
+    },
+    !locked
+  )
 
   return (
     <DrawerCard label="Review">
@@ -80,7 +92,7 @@ export function ReviewCard({ lead, onReview }: { lead: Lead; onReview: (change: 
           onKeyDown={(event) => {
             if (event.key === "Enter") {
               event.preventDefault()
-              markHasWebsite()
+              if (!locked) markHasWebsite()
             }
             if (event.key === "Escape") event.currentTarget.blur()
           }}
@@ -106,7 +118,7 @@ export function ReviewCard({ lead, onReview }: { lead: Lead; onReview: (change: 
             placeholder="Part of a group, closed, not a fit…"
             onChange={(event) => setNote(event.target.value)}
             onKeyDown={(event) => {
-              if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) disqualify()
+              if (event.key === "Enter" && (event.metaKey || event.ctrlKey) && !locked) disqualify()
               if (event.key === "Escape") {
                 event.preventDefault()
                 setDisqualifying(false)
@@ -115,7 +127,7 @@ export function ReviewCard({ lead, onReview }: { lead: Lead; onReview: (change: 
             className="w-full resize-none rounded-md border border-line-strong bg-surface px-3 py-2 text-control text-ink placeholder:text-ink-muted"
           />
           <div className="flex flex-wrap gap-2">
-            <Button size="sm" onClick={disqualify} disabled={!note.trim()}>
+            <Button size="sm" onClick={disqualify} disabled={locked || !note.trim()}>
               Disqualify
             </Button>
             <Button size="sm" variant="secondary" onClick={() => setDisqualifying(false)}>
@@ -125,16 +137,16 @@ export function ReviewCard({ lead, onReview }: { lead: Lead; onReview: (change: 
         </div>
       ) : (
         <div className="flex flex-wrap gap-2">
-          <Button size="sm" onClick={markHasWebsite}>
+          <Button size="sm" onClick={markHasWebsite} disabled={locked}>
             Has website <Kbd>1</Kbd>
           </Button>
-          <Button size="sm" variant="secondary" onClick={() => onReview({ kind: "review", review: "no_website" })}>
+          <Button size="sm" variant="secondary" disabled={locked} onClick={() => onReview({ kind: "review", review: "no_website" })}>
             No website <Kbd>2</Kbd>
           </Button>
-          <Button size="sm" variant="secondary" onClick={() => setDisqualifying(true)}>
+          <Button size="sm" variant="secondary" disabled={locked} onClick={() => setDisqualifying(true)}>
             Disqualify <Kbd>3</Kbd>
           </Button>
-          <Button size="sm" variant="secondary" onClick={() => onReview({ kind: "review", review: "skipped" })}>
+          <Button size="sm" variant="secondary" disabled={locked} onClick={() => onReview({ kind: "review", review: "skipped" })}>
             Skip <Kbd>4</Kbd>
           </Button>
         </div>

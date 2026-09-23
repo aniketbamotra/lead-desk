@@ -136,6 +136,20 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* A row whose status just changed: a short coral-tint fade, in response to
+   the action only. */
+@keyframes row-flash {
+  from {
+    background-color: var(--coral-tint);
+  }
+}
+
+@utility animate-row-flash {
+  & > td {
+    animation: row-flash 600ms ease-out;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
