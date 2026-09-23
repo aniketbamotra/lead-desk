@@ -227,7 +227,8 @@ On a network that inspects HTTPS traffic, the proxy re-signs connections with it
   - Columns: business (name, trading/DBA name underneath if present), city/state, phone, website status, site condition (short label, full label on hover), review status, stage, score, contact
   - Core filters (all verticals): state, city, website status, review status, stage, site condition (including "not assessed": has a website nobody has assessed), score range
   - Dental config adds: "hide DSOs and duplicates" (on by default), specialty
-  - Default sort: `qual_score` desc, then `site_condition_score` desc with unassessed last, then name; global text search
+  - **No sort on load** (owner's decision): the list comes in name order, which editing never changes, so rows don't jump while working and "next lead" stays predictable. Clicking a header sorts (Score and Site sort high first, unassessed sites last); a third click returns to name order. Global text search.
+  - The intended ranking for calling is `qual_score` desc, then `site_condition_score` desc, then name, applied by clicking Score. Sorting is a deliberate action, never automatic.
 - **Detail drawer** (opens beside the table, doesn't replace it)
   - Business info, contact, address, and the vertical's own detail fields (for dental: NPPES specialty, taxonomy group, authorized official, NPI recency)
   - Research links that open in a new tab (core set below; a vertical config can add more):
@@ -409,7 +410,7 @@ _Last updated: end of session 2 (2026-09-23)._
 
 - **v0.1 (research and first calls):** complete.
   - Email + password sign-in (`@supabase/ssr` cookie sessions, `proxy.ts` refresh and redirect, `(desk)` layout re-checks with `getClaims`).
-  - Leads table: title-cased registry text, fixed column widths (Business 300px, Contact takes the rest), sort by score with name as tie-break, sort hints, uniform 48px rows.
+  - Leads table: title-cased registry text, fixed column widths (Business 300px, Contact takes the rest), name order on load (no automatic sort), sortable headers with name as tie-break and a third click to clear, uniform 48px rows.
   - Filter rail: dental "hide DSOs and duplicates" (on by default), state, city, website, review, stage, score range, specialty. Filters, the selected lead and the view live in the URL.
   - Detail drawer: call card, research links, review card (1–4, website pre-filled for unverified leads), stage select, activity, details. Resizable, width remembered.
   - Review feedback: 700ms confirmation with actions locked before moving to the next lead (`J` skips), fade on lead switch, row flash, undo bar (`Z`) that restores every review field.
@@ -451,9 +452,13 @@ _Last updated: end of session 2 (2026-09-23)._
 
 ### Site condition (session 3)
 
-- Built end to end: `domain/site-condition.ts` (options, short labels, provisional points), `Lead.siteCondition` / `siteConditionScore`, adapter, `site_condition` LeadChange (undo restores both fields), the select in the review card (`features/drawer/site-condition-field.tsx`, key `S`), a "Site" column, the default sort, the filter (including "not assessed") and its URL key `site`, and the shortcuts sheet.
+- Built end to end: `domain/site-condition.ts` (options, short labels, provisional points), `Lead.siteCondition` / `siteConditionScore`, adapter, `site_condition` LeadChange (undo restores both fields), the select in the review card (`features/drawer/site-condition-field.tsx`, key `S`), a "Site" column (sorts high first, unassessed last), the filter (including "not assessed") and its URL key `site`, and the shortcuts sheet.
 - Database: `supabase/sql/006_site_condition.sql` adds the two columns and recreates `lead_queue` from the 005 view with them appended. Named 006 because 005 was taken.
 - Incident: the first run added the columns but the view kept the 005 definition, so assessments saved to `leads` but read back as empty (the value vanished after the next refresh). `useLeads` now selects an explicit column list (`READ_COLUMNS` in the adapter, kept in step with `LeadQueueRow`), so a view missing a column fails loudly instead. After any view change, check the API sees the column: `lead_queue?select=<column>&limit=1` with the anon key returns `[]` if it exists and error 42703 if not.
+
+### Sorting change (session 3)
+
+- The default score + site condition sort made rows jump while assessing: the assessed lead moved, and "next lead" followed the new order back to a lead already done. The owner chose no automatic sort instead: name order on load, sorting only on header click. Rows can still move when a manually sorted column's value is edited.
 
 ### Known gaps
 

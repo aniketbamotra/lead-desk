@@ -13,15 +13,10 @@ export function useLeadTable(leads: Lead[]) {
     columns: leadColumns,
     data: leads,
     getRowId: (lead) => String(lead.id),
-    // Default order: score, then site condition (unassessed last), then name
-    // (the order useLeads returns, kept because sorting is stable).
-    initialState: {
-      sorting: [
-        { id: "score", desc: true },
-        { id: "site", desc: true },
-      ],
-    },
-    enableSortingRemoval: false,
+    // No sort on load: the list comes in name order (from useLeads), which
+    // editing a lead never changes, so rows don't jump while working. Clicking
+    // a header sorts; a third click goes back to name order.
+    enableSortingRemoval: true,
   })
 }
 
