@@ -1,3 +1,5 @@
+import { siteConditionOption, type SiteCondition } from "./site-condition"
+
 // The Lead domain model. Components work with this, never with database rows.
 // Shared by every vertical; market-specific data goes in `details`.
 
@@ -44,6 +46,10 @@ export type Lead = {
   possibleTradingName: string | null
   /** Entity only: a website that might belong to that trading name. */
   possibleWebsite: string | null
+  /** A person's assessment of the website (see site-condition.ts). */
+  siteCondition: SiteCondition | null
+  /** Points stored with the assessment; sorts after score. */
+  siteConditionScore: number | null
   reviewStatus: ReviewStatus
   reviewNotes: string | null
   reviewedAt: string | null
@@ -69,6 +75,8 @@ export type ReviewSnapshot = Pick<
   | "websiteSource"
   | "possibleTradingName"
   | "possibleWebsite"
+  | "siteCondition"
+  | "siteConditionScore"
 >
 
 export function reviewSnapshot(lead: Lead): ReviewSnapshot {
@@ -82,6 +90,8 @@ export function reviewSnapshot(lead: Lead): ReviewSnapshot {
     websiteSource: lead.websiteSource,
     possibleTradingName: lead.possibleTradingName,
     possibleWebsite: lead.possibleWebsite,
+    siteCondition: lead.siteCondition,
+    siteConditionScore: lead.siteConditionScore,
   }
 }
 
@@ -99,6 +109,8 @@ export type LeadChange =
       note: string | null
     }
   | { kind: "stage"; stage: Stage }
+  /** Assess the website, or clear the assessment. */
+  | { kind: "site_condition"; condition: SiteCondition | null }
   /** Set or clear the follow-up date (YYYY-MM-DD). */
   | { kind: "follow_up"; date: string | null }
   /** Undo of a review: puts every review field back as it was. */
@@ -118,6 +130,14 @@ export function applyLeadChange(lead: Lead, change: LeadChange, now: string, act
   if (change.kind === "follow_up") {
     return { ...lead, nextFollowUp: change.date }
   }
+  if (change.kind === "site_condition") {
+    return {
+      ...lead,
+      siteCondition: change.condition,
+      siteConditionScore: change.condition ? siteConditionOption(change.condition).points : null,
+      reviewedAt: now,
+    }
+  }
 
   const reviewed = { ...lead, reviewStatus: change.review, reviewedAt: now, reviewedBy: actor }
   switch (change.review) {
@@ -136,4 +156,9 @@ export function applyLeadChange(lead: Lead, change: LeadChange, now: string, act
     default:
       return reviewed
   }
+}
+
+/** A website a person can assess: found or unverified by automation, or added by hand. */
+export function leadHasWebsite(lead: Lead) {
+  return lead.website !== null || lead.websiteStatus === "found" || lead.websiteStatus === "unverified"
 }

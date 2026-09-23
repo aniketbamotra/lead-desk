@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { reviewSnapshot, type Lead, type LeadChange, type ReviewSnapshot } from "@/domain/lead"
 import { reviewStatusLabel, stageLabel } from "@/domain/vocabularies"
+import { siteConditionOption } from "@/domain/site-condition"
 import { useLeads } from "@/data/use-leads"
 import { ReviewConflictError, useUpdateLead } from "@/data/use-update-lead"
 import { useAddActivity } from "@/data/use-activities"
@@ -156,6 +157,13 @@ export function Desk({ email, initialQuery }: { email: string | null; initialQue
         outcome: null,
         note: `Moved from ${stageLabel[lead.stage]} to ${stageLabel[change.stage]}`,
       })
+    }
+    if (change.kind === "site_condition") {
+      // Undoable like a review, but it doesn't move on: the site is often
+      // assessed just before pressing 1.
+      const label = change.condition ? `Site ${siteConditionOption(change.condition).short.toLowerCase()}` : "Site not assessed"
+      setLastReview({ leadId: lead.id, name: lead.name, label, before: reviewSnapshot(lead) })
+      return
     }
     if (change.kind !== "review") return
 

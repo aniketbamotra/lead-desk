@@ -14,18 +14,20 @@ type Props = {
   options: { option: string; count: number }[]
   selected: string[]
   onChange: (next: string[]) => void
+  /** Display text for an option value; defaults to the value itself. */
+  formatOption?: (option: string) => string
 }
 
 // A long list of values (states, cities, specialties). Chosen values show as
 // removable chips; the rest are picked from a searchable checkbox list.
-export function OptionPicker({ noun, options, selected, onChange }: Props) {
+export function OptionPicker({ noun, options, selected, onChange, formatOption = (option) => option }: Props) {
   const [query, setQuery] = useState("")
   const searchId = useId()
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase()
-    return q ? options.filter(({ option }) => option.toLowerCase().includes(q)) : options
-  }, [options, query])
+    return q ? options.filter(({ option }) => formatOption(option).toLowerCase().includes(q)) : options
+  }, [options, query, formatOption])
 
   function toggle(option: string) {
     onChange(selected.includes(option) ? selected.filter((s) => s !== option) : [...selected, option])
@@ -34,8 +36,8 @@ export function OptionPicker({ noun, options, selected, onChange }: Props) {
   return (
     <div className="flex flex-wrap gap-1.5">
       {selected.map((option) => (
-        <Chip key={option} pressed onClick={() => toggle(option)} aria-label={`Remove ${option}`}>
-          {option}
+        <Chip key={option} pressed onClick={() => toggle(option)} aria-label={`Remove ${formatOption(option)}`}>
+          {formatOption(option)}
         </Chip>
       ))}
       <Popover onOpenChange={(open) => !open && setQuery("")}>
@@ -69,7 +71,7 @@ export function OptionPicker({ noun, options, selected, onChange }: Props) {
                       checked={selected.includes(option)}
                       onChange={() => toggle(option)}
                     />
-                    <span className="flex-1 truncate">{option}</span>
+                    <span className="flex-1 truncate">{formatOption(option)}</span>
                     <span className="tnum text-label text-ink-muted">{formatCount(count)}</span>
                   </label>
                 </li>

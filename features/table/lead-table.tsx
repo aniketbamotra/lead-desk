@@ -18,6 +18,7 @@ const COLUMN_WIDTHS: Record<string, number | undefined> = {
   place: 180,
   phone: 128,
   website: 124,
+  site: 132,
   reviewStatus: 116,
   stage: 108,
   score: 72,
@@ -60,7 +61,7 @@ export function LeadTable({ table, totalCount, vertical, selectedId, onSelect, f
       <ListHeader id="lead-table-title" vertical={vertical} shown={rows.length} total={totalCount} actions={actions} />
 
       <div className="min-h-0 flex-1 overflow-auto">
-        <table className="w-full min-w-[1210px] table-fixed border-separate border-spacing-y-0.5">
+        <table className="w-full min-w-[1340px] table-fixed border-separate border-spacing-y-0.5">
           <colgroup>
             {table.getAllLeafColumns().map((column) => (
               <col key={column.id} style={{ width: COLUMN_WIDTHS[column.id] }} />

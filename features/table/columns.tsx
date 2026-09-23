@@ -1,6 +1,7 @@
 import { createColumnHelper } from "@tanstack/react-table"
 import { StatusMark } from "@/components/ui/status-mark"
 import type { Lead } from "@/domain/lead"
+import { siteConditionOption } from "@/domain/site-condition"
 import { reviewStatusLabel, stageLabel, stageNeedsAction } from "@/domain/vocabularies"
 import { formatShortDay, todayISO } from "@/lib/dates"
 import { formatPlace } from "@/lib/format"
@@ -31,6 +32,24 @@ export const leadColumns = helper.columns([
     header: "Website",
     sortFn: "text",
     cell: (info) => <StatusMark status={info.row.original.websiteStatus} />,
+  }),
+  // Sorts by the stored points; unassessed leads always sort last, so they
+  // never outrank an assessed bad site.
+  helper.accessor((lead) => lead.siteConditionScore ?? undefined, {
+    id: "site",
+    header: "Site",
+    sortDescFirst: true,
+    sortUndefined: "last",
+    cell: (info) => {
+      const condition = info.row.original.siteCondition
+      if (!condition) return null
+      const option = siteConditionOption(condition)
+      return (
+        <span className="truncate" title={option.label}>
+          {option.short}
+        </span>
+      )
+    },
   }),
   helper.accessor("reviewStatus", {
     header: "Review",

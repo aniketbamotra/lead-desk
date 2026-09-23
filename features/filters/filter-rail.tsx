@@ -6,11 +6,12 @@ import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import { REVIEW_STATUSES, STAGES, WEBSITE_STATUSES, type Lead } from "@/domain/lead"
 import { reviewStatusLabel, stageLabel, websiteStatusLabel } from "@/domain/vocabularies"
+import { SITE_CONDITIONS, isSiteCondition, siteConditionOption } from "@/domain/site-condition"
 import type { VerticalConfig } from "@/verticals/types"
-import { facet } from "./apply-filters"
+import { facet, siteConditionValue } from "./apply-filters"
 import { ChipSelect } from "./chip-select"
 import { FilterGroup } from "./filter-group"
-import type { WebsiteFilterValue } from "./filters"
+import type { SiteConditionFilterValue, WebsiteFilterValue } from "./filters"
 import { OptionPicker } from "./option-picker"
 import { ScoreRange } from "./score-range"
 import type { FiltersApi } from "./use-filters"
@@ -37,6 +38,18 @@ export function FilterRail({ leads, vertical, api }: Props) {
       ),
     [leads, filters.states]
   )
+  // Config order (best prospect first), "not assessed" first as the backlog.
+  const siteOptions = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const lead of leads) {
+      const value = siteConditionValue(lead)
+      if (value) counts.set(value, (counts.get(value) ?? 0) + 1)
+    }
+    return ["unassessed", ...SITE_CONDITIONS.map((c) => c.key)].map((option) => ({
+      option,
+      count: counts.get(option) ?? 0,
+    }))
+  }, [leads])
   const scoreBounds = useMemo(() => {
     const scores = leads.map((l) => l.score).filter((s): s is number => s !== null)
     return scores.length ? { min: Math.min(...scores), max: Math.max(...scores) } : null
@@ -103,6 +116,16 @@ export function FilterRail({ leads, vertical, api }: Props) {
         <ChipSelect options={STAGES} labels={stageLabel} selected={filters.stages} onChange={(next) => update("stages", next)} />
       </FilterGroup>
 
+      <FilterGroup label="Site condition">
+        <OptionPicker
+          noun="site condition"
+          options={siteOptions}
+          selected={filters.siteConditions}
+          onChange={(next) => update("siteConditions", next as SiteConditionFilterValue[])}
+          formatOption={formatSiteOption}
+        />
+      </FilterGroup>
+
       <FilterGroup label="Score">
         <ScoreRange
           min={filters.scoreMin}
@@ -141,4 +164,8 @@ function ToggleFilter({ label, on, onChange }: { label: string; on: boolean; onC
       </label>
     </div>
   )
+}
+
+function formatSiteOption(option: string) {
+  return isSiteCondition(option) ? siteConditionOption(option).short : "Not assessed"
 }

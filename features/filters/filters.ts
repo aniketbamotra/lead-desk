@@ -1,7 +1,11 @@
 import type { ReviewStatus, Stage, WebsiteStatus } from "@/domain/lead"
+import type { SiteCondition } from "@/domain/site-condition"
 import type { VerticalConfig } from "@/verticals/types"
 
 export type WebsiteFilterValue = WebsiteStatus | "unchecked"
+
+/** "unassessed": has a website a person hasn't assessed yet. */
+export type SiteConditionFilterValue = SiteCondition | "unassessed"
 
 export type Filters = {
   search: string
@@ -10,6 +14,7 @@ export type Filters = {
   websiteStatuses: WebsiteFilterValue[]
   reviewStatuses: ReviewStatus[]
   stages: Stage[]
+  siteConditions: SiteConditionFilterValue[]
   scoreMin: number | null
   scoreMax: number | null
   /** Only leads whose follow-up date is today or earlier. */
@@ -34,6 +39,7 @@ export function defaultFilters(vertical: VerticalConfig): Filters {
     websiteStatuses: [],
     reviewStatuses: [],
     stages: [],
+    siteConditions: [],
     scoreMin: null,
     scoreMax: null,
     dueOnly: false,

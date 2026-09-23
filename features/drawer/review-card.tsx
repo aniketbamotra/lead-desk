@@ -3,12 +3,14 @@
 import { useEffect, useId, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Kbd } from "@/components/ui/kbd"
-import type { Lead, LeadChange } from "@/domain/lead"
+import { leadHasWebsite, type Lead, type LeadChange } from "@/domain/lead"
+import type { SiteCondition } from "@/domain/site-condition"
 import { reviewStatusLabel } from "@/domain/vocabularies"
 import { normalizeWebsite } from "@/lib/url"
 import { useKeys } from "@/features/keyboard/use-key"
 import { DrawerCard } from "./drawer-card"
 import { EntityOnlyForm } from "./entity-only-form"
+import { SiteConditionField } from "./site-condition-field"
 
 type ReviewChange = Extract<LeadChange, { kind: "review" }>
 
@@ -19,10 +21,12 @@ type Mode = "actions" | "disqualify" | "entity_only"
 export function ReviewCard({
   lead,
   onReview,
+  onSiteCondition,
   locked,
 }: {
   lead: Lead
   onReview: (change: ReviewChange) => void
+  onSiteCondition: (condition: SiteCondition | null) => void
   /** True while a review action is being confirmed; nothing can be pressed. */
   locked: boolean
 }) {
@@ -111,6 +115,12 @@ export function ReviewCard({
             </p>
           )}
         </div>
+      )}
+
+      {/* Shown once there's a site to judge, including a URL typed but not
+          yet saved, so it can be assessed before marking "Has website". */}
+      {mode !== "entity_only" && (leadHasWebsite(lead) || url.trim() !== "") && (
+        <SiteConditionField value={lead.siteCondition} onChange={onSiteCondition} disabled={locked} />
       )}
 
       {mode === "entity_only" ? (

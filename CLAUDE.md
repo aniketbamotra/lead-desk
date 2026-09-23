@@ -75,6 +75,8 @@ Supabase (Postgres). RLS is enabled. The dashboard uses the **anon/publishable k
 | `website_status` | automated result, see below |
 | `website_source` | `domain_guess` or `manual` |
 | `possible_trading_name`, `possible_website` | entity only: an unconfirmed trading name seen at the address, and its website if found. Written by a person, never by automation |
+| `site_condition` | a person's assessment of the website: `broken`, `outdated`, `not_mobile`, `thin`, `social_only`, `directory_only`, `template`, `decent`, `modern`, or null (not assessed). Keys and labels in `domain/site-condition.ts` |
+| `site_condition_score` | points for that assessment, copied from config when it's saved (provisional, see **Site condition**) |
 | `domain_checked_at` | set when enrichment finishes a lead |
 | `review_status` | manual research result, see below |
 | `review_notes`, `reviewed_at` | |
@@ -222,10 +224,10 @@ On a network that inspects HTTPS traffic, the proxy re-signs connections with it
 
 - **Sign in** with email and password (Supabase Auth). A small team with accounts created by the owner, so no magic link: it added redirect URLs, an email template, a confirm route and email rate limits for no benefit.
 - **Leads table** reading `lead_queue`
-  - Columns: business (name, trading/DBA name underneath if present), city/state, phone, website status, review status, stage, score, contact
-  - Core filters (all verticals): state, city, website status, review status, stage, score range
+  - Columns: business (name, trading/DBA name underneath if present), city/state, phone, website status, site condition (short label, full label on hover), review status, stage, score, contact
+  - Core filters (all verticals): state, city, website status, review status, stage, site condition (including "not assessed": has a website nobody has assessed), score range
   - Dental config adds: "hide DSOs and duplicates" (on by default), specialty
-  - Sort by score by default; global text search
+  - Default sort: `qual_score` desc, then `site_condition_score` desc with unassessed last, then name; global text search
 - **Detail drawer** (opens beside the table, doesn't replace it)
   - Business info, contact, address, and the vertical's own detail fields (for dental: NPPES specialty, taxonomy group, authorized official, NPI recency)
   - Research links that open in a new tab (core set below; a vertical config can add more):
@@ -240,6 +242,7 @@ On a network that inspects HTTPS traffic, the proxy re-signs connections with it
     - **Disqualify** with a note → `review_status='disqualified'`, `review_notes`
     - **Skip** → `review_status='skipped'`
     - **Mark as entity only** (`5`) → optional trading name seen at the address and its website, plus notes (pre-filled with what's saved) → `review_status='entity_only'`, `possible_trading_name`, `possible_website`, `review_notes`, `reviewed_at`. Leaves `website` and `website_status` alone (automation owns them). The table shows the possible trading name as "Possibly …" under the business name, in place of the trading name.
+  - **Site condition** (`S` focuses it): a single select in the review card, shown when the lead has a website (`found`, `unverified`, or a URL on record) or a URL has been typed into the Website field. Writes `site_condition`, `site_condition_score` (from config) and `reviewed_at`; optimistic, undoable with `Z`. It doesn't move to the next lead, so the site can be assessed before pressing `1`.
   - Call: copy phone number, and a `tel:` link
   - Stage selector (writes `status`, `stage_updated_at`)
 - **Keyboard**: `J`/`K` next/previous lead within the current filtered set, `1`–`5` review actions, `C` copy phone, `/` focus search, `Esc` close drawer, `Z` undo the last review, `L` log a call, `?` shortcuts sheet (also the keyboard button in the header).
@@ -258,6 +261,7 @@ URL formats:
 ### v0.3 — audit and automation
 
 - Show PageSpeed scores once the audit workflow populates them
+- When `performance_score`, `accessibility_score` and `seo_score` arrive, compare them with the manual site condition assessments before trusting either: they're an automated check on the same question
 - Buttons that trigger n8n workflows via webhook, called from a route handler under `app/api/` so the webhook auth header stays on the server.
 - Note: n8n runs on `localhost:5679`, so workflow triggers only work while the dashboard runs locally. If the app is deployed, this feature needs n8n hosted somewhere reachable from the deployment.
 
@@ -266,6 +270,25 @@ URL formats:
 - Vertical switcher, once a second market exists
 - Outreach message drafting
 - Project management happens in **Linear**. Don't build it. A later "won → create Linear project" handoff is the most that belongs here.
+
+---
+
+## Site condition
+
+Answers "do they need what I sell", while `qual_score` answers "is this the kind of business I want". Two separate columns, combined only when sorting. Never fold site condition into `qual_score`.
+
+The options and points live in `domain/site-condition.ts`, ordered best prospect first. **The points are provisional**: a first guess, to be tuned after real calls. The control, the table, the filter and the stored score all read that one list.
+
+The score is stored when an assessment is saved, so after changing points, refresh existing rows to match (edit the numbers to the new config):
+
+```sql
+update public.leads set site_condition_score = case site_condition
+  when 'broken' then 30 when 'outdated' then 25 when 'not_mobile' then 25
+  when 'thin' then 20 when 'social_only' then 20 when 'directory_only' then 20
+  when 'template' then 15 when 'decent' then 5 when 'modern' then 0
+end
+where site_condition is not null;
+```
 
 ---
 
@@ -426,6 +449,11 @@ _Last updated: end of session 2 (2026-09-23)._
 - Database: the owner ran `supabase/sql/005_entity_only.sql` (named 005 because 004 was taken by attribution; it recreates `lead_queue` from the 004 view with the two columns appended, since the view lists columns by name rather than `l.*`).
 - If saving "Entity only" fails with a check-constraint error, `review_status` has a constraint listing allowed values that needs `entity_only` added.
 
+### Site condition (session 3)
+
+- Built end to end: `domain/site-condition.ts` (options, short labels, provisional points), `Lead.siteCondition` / `siteConditionScore`, adapter, `site_condition` LeadChange (undo restores both fields), the select in the review card (`features/drawer/site-condition-field.tsx`, key `S`), a "Site" column, the default sort, the filter (including "not assessed") and its URL key `site`, and the shortcuts sheet.
+- Database: `supabase/sql/006_site_condition.sql` adds the two columns and recreates `lead_queue` from the 005 view with them appended. Named 006 because 005 was taken. Owner to run.
+
 ### Known gaps
 
 - `J`/`K` follow the table's sort order in board view too.
@@ -436,4 +464,4 @@ _Last updated: end of session 2 (2026-09-23)._
 
 ### Next step
 
-Owner runs `004_attribution.sql` and picks hosting; then deploy (env vars, Supabase site URL, the teammate's account) and the teammate starts research. Candidates after that: tests, auto-moving New to Contacted on a logged call, lead ownership when the teammate starts outreach, v0.3 (PageSpeed scores, n8n triggers via `app/api/`).
+Owner runs `006_site_condition.sql`; then deploy to Vercel (env vars, Supabase site URL, the teammate's account) and the teammate starts research. Candidates after that: tests, auto-moving New to Contacted on a logged call, lead ownership when the teammate starts outreach, v0.3 (PageSpeed scores, n8n triggers via `app/api/`).

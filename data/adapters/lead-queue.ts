@@ -8,6 +8,7 @@ import {
   type Stage,
   type WebsiteStatus,
 } from "@/domain/lead"
+import { isSiteCondition, siteConditionOption } from "@/domain/site-condition"
 import { toDisplayCase } from "@/lib/display-case"
 
 // The only file that knows the shape of lead_queue / leads. Reads come from
@@ -52,6 +53,8 @@ export type LeadQueueRow = {
   website_source: string | null
   possible_trading_name: string | null
   possible_website: string | null
+  site_condition: string | null
+  site_condition_score: number | null
   review_status: string | null
   review_notes: string | null
   reviewed_at: string | null
@@ -110,6 +113,8 @@ export function toLead(row: LeadQueueRow): Lead {
     websiteSource: blankToNull(row.website_source),
     possibleTradingName: blankToNull(row.possible_trading_name),
     possibleWebsite: blankToNull(row.possible_website),
+    siteCondition: isSiteCondition(row.site_condition) ? row.site_condition : null,
+    siteConditionScore: row.site_condition_score,
     reviewStatus: oneOf<ReviewStatus>(REVIEW_STATUSES, row.review_status, "pending"),
     reviewNotes: blankToNull(row.review_notes),
     reviewedAt: row.reviewed_at,
@@ -134,12 +139,20 @@ export function toLead(row: LeadQueueRow): Lead {
 }
 
 /** The `leads` columns to write for a change. Only these fields are touched. */
-export function toLeadsUpdate(change: LeadChange, now: string): Record<string, string | null> {
+export function toLeadsUpdate(change: LeadChange, now: string): Record<string, string | number | null> {
   if (change.kind === "stage") {
     return { status: change.stage, stage_updated_at: now }
   }
   if (change.kind === "follow_up") {
     return { next_follow_up: change.date }
+  }
+  if (change.kind === "site_condition") {
+    // Points come from config at the moment of assessment.
+    return {
+      site_condition: change.condition,
+      site_condition_score: change.condition ? siteConditionOption(change.condition).points : null,
+      reviewed_at: now,
+    }
   }
   if (change.kind === "restore") {
     // Undo puts back exactly what was there, including what automation wrote.
@@ -154,6 +167,8 @@ export function toLeadsUpdate(change: LeadChange, now: string): Record<string, s
       website_source: snapshot.websiteSource,
       possible_trading_name: snapshot.possibleTradingName,
       possible_website: snapshot.possibleWebsite,
+      site_condition: snapshot.siteCondition,
+      site_condition_score: snapshot.siteConditionScore,
     }
   }
 

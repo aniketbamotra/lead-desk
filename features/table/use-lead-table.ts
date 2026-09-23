@@ -13,7 +13,14 @@ export function useLeadTable(leads: Lead[]) {
     columns: leadColumns,
     data: leads,
     getRowId: (lead) => String(lead.id),
-    initialState: { sorting: [{ id: "score", desc: true }] },
+    // Default order: score, then site condition (unassessed last), then name
+    // (the order useLeads returns, kept because sorting is stable).
+    initialState: {
+      sorting: [
+        { id: "score", desc: true },
+        { id: "site", desc: true },
+      ],
+    },
     enableSortingRemoval: false,
   })
 }

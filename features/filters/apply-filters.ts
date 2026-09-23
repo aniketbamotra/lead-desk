@@ -1,8 +1,8 @@
-import type { Lead } from "@/domain/lead"
+import { leadHasWebsite, type Lead } from "@/domain/lead"
 import { todayISO } from "@/lib/dates"
 import { digitsOnly } from "@/lib/format"
 import type { VerticalConfig } from "@/verticals/types"
-import type { Filters, WebsiteFilterValue } from "./filters"
+import type { Filters, SiteConditionFilterValue, WebsiteFilterValue } from "./filters"
 
 // Client-side filtering. The one place filter rules live; moving to
 // server-side filtering means translating this into the useLeads query.
@@ -19,6 +19,12 @@ function matchesSearch(lead: Lead, search: string) {
 
   return [lead.name, lead.tradingName, lead.possibleTradingName, lead.address.city, lead.contact.name, lead.website]
     .some((field) => field?.toLowerCase().includes(query))
+}
+
+/** A lead's site condition for filtering; null when it has no website to assess. */
+export function siteConditionValue(lead: Lead): SiteConditionFilterValue | null {
+  if (lead.siteCondition) return lead.siteCondition
+  return leadHasWebsite(lead) ? "unassessed" : null
 }
 
 function inList<T>(list: T[], value: T) {
@@ -39,6 +45,10 @@ export function applyFilters(leads: Lead[], filters: Filters, vertical: Vertical
     if (!inList(filters.websiteStatuses, website)) return false
     if (!inList(filters.reviewStatuses, lead.reviewStatus)) return false
     if (!inList(filters.stages, lead.stage)) return false
+    if (filters.siteConditions.length) {
+      const site = siteConditionValue(lead)
+      if (site === null || !filters.siteConditions.includes(site)) return false
+    }
 
     if (filters.scoreMin !== null || filters.scoreMax !== null) {
       if (lead.score === null) return false

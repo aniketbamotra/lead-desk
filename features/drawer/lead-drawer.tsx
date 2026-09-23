@@ -126,7 +126,13 @@ export function LeadDrawer({ lead, vertical, onClose, onChange, onLogCall, me, e
             onClearFollowUp={() => onChange({ kind: "follow_up", date: null })}
           />
           <ResearchCard lead={lead} vertical={vertical} />
-          <ReviewCard key={`review-${lead.id}`} lead={lead} onReview={onChange} locked={confirmation !== null} />
+          <ReviewCard
+            key={`review-${lead.id}`}
+            lead={lead}
+            onReview={onChange}
+            onSiteCondition={(condition) => onChange({ kind: "site_condition", condition })}
+            locked={confirmation !== null}
+          />
           <StageCard stage={lead.stage} onChange={(stage: Stage) => onChange({ kind: "stage", stage })} />
           <ActivityCard leadId={lead.id} me={me} />
           <DetailsCard lead={lead} vertical={vertical} me={me} />
