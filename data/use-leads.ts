@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client"
 import type { Lead } from "@/domain/lead"
 import {
   FILTER_BY_VERTICAL,
+  READ_COLUMNS,
   READ_SOURCE,
   toLead,
   type LeadQueueRow,
@@ -22,7 +23,7 @@ async function fetchLeads(vertical: string): Promise<Lead[]> {
   for (let from = 0; ; from += PAGE_SIZE) {
     let query = supabase
       .from(READ_SOURCE)
-      .select("*")
+      .select(READ_COLUMNS)
       .order("id")
       .range(from, from + PAGE_SIZE - 1)
     if (FILTER_BY_VERTICAL) query = query.eq("vertical", vertical)
@@ -30,7 +31,9 @@ async function fetchLeads(vertical: string): Promise<Lead[]> {
     const { data, error } = await query
     if (error) throw new Error(`Couldn't load leads: ${error.message}`)
 
-    rows.push(...(data as LeadQueueRow[]))
+    // The select list is built at runtime, so the client can't infer the row
+    // type; LeadQueueRow (checked against READ_COLUMNS) is the contract.
+    rows.push(...(data as unknown as LeadQueueRow[]))
     if (data.length < PAGE_SIZE) break
   }
 

@@ -452,7 +452,8 @@ _Last updated: end of session 2 (2026-09-23)._
 ### Site condition (session 3)
 
 - Built end to end: `domain/site-condition.ts` (options, short labels, provisional points), `Lead.siteCondition` / `siteConditionScore`, adapter, `site_condition` LeadChange (undo restores both fields), the select in the review card (`features/drawer/site-condition-field.tsx`, key `S`), a "Site" column, the default sort, the filter (including "not assessed") and its URL key `site`, and the shortcuts sheet.
-- Database: `supabase/sql/006_site_condition.sql` adds the two columns and recreates `lead_queue` from the 005 view with them appended. Named 006 because 005 was taken. Owner to run.
+- Database: `supabase/sql/006_site_condition.sql` adds the two columns and recreates `lead_queue` from the 005 view with them appended. Named 006 because 005 was taken.
+- Incident: the first run added the columns but the view kept the 005 definition, so assessments saved to `leads` but read back as empty (the value vanished after the next refresh). `useLeads` now selects an explicit column list (`READ_COLUMNS` in the adapter, kept in step with `LeadQueueRow`), so a view missing a column fails loudly instead. After any view change, check the API sees the column: `lead_queue?select=<column>&limit=1` with the anon key returns `[]` if it exists and error 42703 if not.
 
 ### Known gaps
 

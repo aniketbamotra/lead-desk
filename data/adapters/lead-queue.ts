@@ -23,6 +23,23 @@ export const WRITE_TABLE = "leads"
 export const FILTER_BY_VERTICAL = true
 const DEFAULT_VERTICAL = "dental"
 
+/**
+ * The exact columns read from lead_queue. Listed rather than `*` so a view
+ * that's missing a column fails loudly ("column ... does not exist") instead
+ * of silently returning nothing for it. Keep in step with LeadQueueRow.
+ */
+export const READ_COLUMNS = [
+  "id", "vertical", "npi", "business_name", "dba_name", "specialty", "taxonomy_code", "taxonomy_group",
+  "phone", "address", "address_2", "city", "state", "zip",
+  "contact_name", "contact_title", "contact_phone", "contact_email", "contact_linkedin",
+  "npi_status", "enumeration_date", "last_updated_nppes", "years_since_update",
+  "website", "website_status", "website_source", "possible_trading_name", "possible_website",
+  "site_condition", "site_condition_score",
+  "review_status", "review_notes", "reviewed_at", "reviewed_by",
+  "status", "next_follow_up", "stage_updated_at",
+  "qual_score", "official_org_count", "is_duplicate",
+].join(",")
+
 /** Columns of public.lead_queue this app reads. */
 export type LeadQueueRow = {
   id: number
