@@ -189,14 +189,14 @@ domain/              Lead type, LeadChange + applyLeadChange, status vocabularie
 verticals/           VerticalConfig type, dental.ts, index.ts (activeVertical)
 data/                the only code that touches Supabase: adapters/lead-queue.ts, use-leads, use-update-lead, use-session
 components/ui/       restyled shadcn primitives + our own (chip, kbd, status-mark, input)
-features/            auth, desk, filters, table (drawer and keyboard next)
+features/            auth, desk, filters, table, drawer, keyboard
 ```
 
 Components import from `domain/`, `verticals/` and the `data/` hooks, never from `data/adapters/` or `lib/supabase/`.
 
-### Local environment: corporate TLS inspection
+### Local environment: HTTPS-inspecting networks
 
-The owner's Mac sits behind Zscaler (Capgemini), which re-signs HTTPS traffic with Capgemini's root certificate. Browsers trust it through the macOS keychain; Node does not, so server-side Supabase calls fail with `SELF_SIGNED_CERT_IN_CHAIN`. The symptom is signing in successfully and then being sent straight back to `/sign-in`. Fix: export the root to `~/.certs/corporate-ca.pem` and set `NODE_EXTRA_CA_CERTS` to it in `~/.zshrc`. Never "fix" it with `NODE_TLS_REJECT_UNAUTHORIZED=0`. The proxy logs `[auth] Couldn't verify the session` when this happens. Set up on the owner's Mac in session 2 (verified: Node → Supabase returns 200 from a new shell). If Zscaler adds another intermediate certificate later, re-export it into the same file.
+On a network that inspects HTTPS traffic, the proxy re-signs connections with its own root certificate. Browsers trust it through the OS keychain; Node does not, so server-side Supabase calls fail with `SELF_SIGNED_CERT_IN_CHAIN`. The symptom is signing in successfully and then being sent straight back to `/sign-in`, with `[auth] Couldn't verify the session` in the dev terminal. Fix: export the proxy's root certificate to a file and set `NODE_EXTRA_CA_CERTS` to it in the shell profile, then restart the dev server from a new terminal. Never "fix" it with `NODE_TLS_REJECT_UNAUTHORIZED=0`. This is already set up on the owner's machine.
 
 ### Supabase auth setup (one-time, in the Supabase dashboard)
 
