@@ -13,6 +13,8 @@ export const dental: VerticalConfig = {
   id: "dental",
   displayName: "Dental practices",
   nouns: { singular: "practice", plural: "practices" },
+  // Most practices open around 8 and close by 5, Monday to Friday.
+  callingHours: { days: [1, 2, 3, 4, 5], start: 8, end: 17 },
 
   detailFields: [
     { key: "specialty", label: "Specialty" },

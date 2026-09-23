@@ -30,6 +30,8 @@ export type Lead = {
     state: string | null
     zip: string | null
   }
+  /** IANA time zone of the address, e.g. "America/Chicago"; null when unknown. */
+  timeZone: string | null
   contact: {
     name: string | null
     title: string | null

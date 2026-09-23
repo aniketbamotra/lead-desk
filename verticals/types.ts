@@ -27,6 +27,15 @@ export type VerticalFilter =
       value: (lead: Lead) => string | null
     }
 
+/** When a business in this market picks up the phone, in its own local time. */
+export type CallingHours = {
+  /** 0 = Sunday. */
+  days: number[]
+  /** Hours on a 24-hour clock; `end` is exclusive (17 means until 5 PM). */
+  start: number
+  end: number
+}
+
 export type ResearchLink = { label: string; href: string }
 
 export type VerticalConfig = {
@@ -34,6 +43,8 @@ export type VerticalConfig = {
   /** Shown under the app name, e.g. "Dental practices". */
   displayName: string
   nouns: { singular: string; plural: string }
+  /** Outside these, the table marks a lead's local time as after hours. */
+  callingHours: CallingHours
   detailFields: DetailField[]
   filters: VerticalFilter[]
   /** Added after the core research links in the drawer. */

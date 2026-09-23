@@ -5,6 +5,7 @@ import { siteConditionOption } from "@/domain/site-condition"
 import { reviewStatusLabel, stageLabel, stageNeedsAction } from "@/domain/vocabularies"
 import { formatShortDay, todayISO } from "@/lib/dates"
 import { formatPlace } from "@/lib/format"
+import { utcOffsetMinutes } from "@/lib/time-zones"
 import { cn } from "@/lib/utils"
 import type { leadTableFeatures } from "./table-features"
 
@@ -26,6 +27,14 @@ export const leadColumns = helper.columns([
     header: "Phone",
     enableSorting: false,
     cell: (info) => <span className="tnum">{info.getValue() ?? "–"}</span>,
+  }),
+  // Sorts by UTC offset, east first (the zone whose day is furthest along);
+  // unknown zones last. Rendered by LeadTable, which has the calling hours.
+  helper.accessor((lead) => (lead.timeZone ? utcOffsetMinutes(lead.timeZone, new Date()) : undefined), {
+    id: "localTime",
+    header: "Local time",
+    sortDescFirst: true,
+    sortUndefined: "last",
   }),
   helper.accessor((lead) => lead.websiteStatus ?? "", {
     id: "website",

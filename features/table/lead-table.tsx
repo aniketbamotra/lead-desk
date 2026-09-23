@@ -7,6 +7,7 @@ import type { Lead } from "@/domain/lead"
 import type { VerticalConfig } from "@/verticals/types"
 import { ListHeader } from "@/features/desk/list-header"
 import { PossibleName } from "@/components/ui/possible-name"
+import { LocalTimeCell } from "./local-time-cell"
 import type { LeadTableInstance } from "./use-lead-table"
 
 const RIGHT_ALIGNED = new Set(["score"])
@@ -17,6 +18,7 @@ const COLUMN_WIDTHS: Record<string, number | undefined> = {
   business: 300,
   place: 180,
   phone: 128,
+  localTime: 124,
   website: 124,
   site: 132,
   reviewStatus: 116,
@@ -61,7 +63,7 @@ export function LeadTable({ table, totalCount, vertical, selectedId, onSelect, f
       <ListHeader id="lead-table-title" vertical={vertical} shown={rows.length} total={totalCount} actions={actions} />
 
       <div className="min-h-0 flex-1 overflow-auto">
-        <table className="w-full min-w-[1340px] table-fixed border-separate border-spacing-y-0.5">
+        <table className="w-full min-w-[1464px] table-fixed border-separate border-spacing-y-0.5">
           <colgroup>
             {table.getAllLeafColumns().map((column) => (
               <col key={column.id} style={{ width: COLUMN_WIDTHS[column.id] }} />
@@ -135,6 +137,8 @@ export function LeadTable({ table, totalCount, vertical, selectedId, onSelect, f
                     >
                       {cell.column.id === "business" ? (
                         <BusinessCell lead={lead} selected={selected} onSelect={() => onSelect(lead.id)} />
+                      ) : cell.column.id === "localTime" ? (
+                        <LocalTimeCell timeZone={lead.timeZone} callingHours={vertical.callingHours} />
                       ) : (
                         <table.FlexRender cell={cell} />
                       )}

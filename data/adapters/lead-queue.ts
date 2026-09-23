@@ -10,6 +10,7 @@ import {
 } from "@/domain/lead"
 import { isSiteCondition, siteConditionOption } from "@/domain/site-condition"
 import { toDisplayCase } from "@/lib/display-case"
+import { usTimeZone } from "@/lib/time-zones"
 
 // The only file that knows the shape of lead_queue / leads. Reads come from
 // the lead_queue view; writes go to the leads table. If the schema changes or
@@ -118,6 +119,7 @@ export function toLead(row: LeadQueueRow): Lead {
       state: blankToNull(row.state),
       zip: blankToNull(row.zip),
     },
+    timeZone: usTimeZone(blankToNull(row.state), blankToNull(row.zip)),
     contact: {
       name: display(row.contact_name),
       title: display(row.contact_title),

@@ -224,10 +224,11 @@ On a network that inspects HTTPS traffic, the proxy re-signs connections with it
 
 - **Sign in** with email and password (Supabase Auth). A small team with accounts created by the owner, so no magic link: it added redirect URLs, an email template, a confirm route and email rate limits for no benefit.
 - **Leads table** reading `lead_queue`
-  - Columns: business (name, trading/DBA name underneath if present), city/state, phone, website status, site condition (short label, full label on hover), review status, stage, score, contact
+  - Columns: business (name, trading/DBA name underneath if present), city/state, phone, local time, website status, site condition (short label, full label on hover), review status, stage, score, contact
   - Core filters (all verticals): state, city, website status, review status, stage, site condition (including "not assessed": has a website nobody has assessed), score range
   - Dental config adds: "hide DSOs and duplicates" (on by default), specialty
   - **No sort on load** (owner's decision): the list comes in name order, which editing never changes, so rows don't jump while working and "next lead" stays predictable. Clicking a header sorts (Score and Site sort high first, unassessed sites last); a third click returns to name order. Global text search.
+  - **Local time**: the lead's current time and zone abbreviation ("2:14 PM EDT"), ticking each minute. The zone comes from state, with ZIP-prefix overrides for split states (`lib/time-zones.ts`; a few border counties follow their state's main zone). Outside the vertical's `callingHours` (dental: Mon–Fri 8–5) the time turns `ink-muted` with "Before hours", "After hours" or "Weekend" underneath. Sorts by UTC offset, east first; unknown state last.
   - The intended ranking for calling is `qual_score` desc, then `site_condition_score` desc, then name, applied by clicking Score. Sorting is a deliberate action, never automatic.
 - **Detail drawer** (opens beside the table, doesn't replace it)
   - Business info, contact, address, and the vertical's own detail fields (for dental: NPPES specialty, taxonomy group, authorized official, NPI recency)
@@ -404,7 +405,7 @@ Stock shadcn look; drop shadows on cards; gradients as decoration; all-caps eyeb
 
 ## Current state
 
-_Last updated: end of session 3 (2026-09-23)._
+_Last updated: session 4 (2026-09-23)._
 
 ### Built
 
@@ -459,6 +460,10 @@ _Last updated: end of session 3 (2026-09-23)._
 ### Sorting change (session 3)
 
 - The default score + site condition sort made rows jump while assessing: the assessed lead moved, and "next lead" followed the new order back to a lead already done. The owner chose no automatic sort instead: name order on load, sorting only on header click. Rows can still move when a manually sorted column's value is edited.
+
+### Local time (session 4)
+
+- "Local time" column after Phone: `Lead.timeZone` (derived in the adapter from state + ZIP by `lib/time-zones.ts`, no database change), `VerticalConfig.callingHours`, one shared minute clock (`lib/use-minute-clock.ts`) so rows don't each run a timer. Rendered by `LeadTable` (like Business) because the cell needs the vertical's calling hours. Not yet in the drawer or as a filter ("callable now" would be a natural next filter).
 
 ### Known gaps
 
