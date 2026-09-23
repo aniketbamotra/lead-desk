@@ -404,7 +404,7 @@ Stock shadcn look; drop shadows on cards; gradients as decoration; all-caps eyeb
 
 ## Current state
 
-_Last updated: end of session 2 (2026-09-23)._
+_Last updated: end of session 3 (2026-09-23)._
 
 ### Built
 
@@ -437,9 +437,9 @@ _Last updated: end of session 2 (2026-09-23)._
 - `cn` must come from `@/lib/utils` (see Stack).
 - The owner's machine is behind HTTPS inspection; `NODE_EXTRA_CA_CERTS` is set up (see Local environment).
 
-### Two-person changes (session 3, not yet deployed)
+### Two-person changes (session 3)
 
-- `supabase/sql/004_attribution.sql` (owner to run): `leads.reviewed_by` set by a trigger when `review_status` changes (cleared when undone to pending), `lead_activities.created_by` defaulting to the signed-in email, `lead_queue` recreated with `reviewed_by`. Both come from `auth.jwt()`, not the browser.
+- `supabase/sql/004_attribution.sql` (run): `leads.reviewed_by` set by a trigger when `review_status` changes (cleared when undone to pending), `lead_activities.created_by` defaulting to the signed-in email, `lead_queue` recreated with `reviewed_by`. Both come from `auth.jwt()`, not the browser.
 - Review and undo saves only apply if `review_status` still matches what the screen showed (`useUpdateLead`); otherwise the drawer says who reviewed it first and the list refreshes.
 - Leads refresh every 60s and on window focus. A successful save re-applies its change so a refresh that landed mid-save can't undo it on screen.
 - The drawer shows "Reviewed Sep 23 by Priya" / "by you" and "by …" on each activity (`lib/people.ts`).
@@ -468,6 +468,16 @@ _Last updated: end of session 2 (2026-09-23)._
 - No tests yet (Vitest would need the owner's approval).
 - Nothing checked visually by Claude since the drawer: its browser isn't signed in. The owner reviews in their browser.
 
+### Deploying (Vercel)
+
+The owner is deploying to Vercel from the GitHub repo (`main`). What it needs:
+- Environment variables in Vercel: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (same values as `.env.local`). No other keys yet.
+- Supabase → Authentication → URL configuration: set Site URL to the Vercel address (password sign-in doesn't use redirects, but Supabase links and emails use it). Keep sign-ups disabled.
+- The teammate's account: Authentication → Users → Add user, with "Auto confirm user". Their email then shows as the reviewer ("by <name>").
+- Not needed on Vercel: `NODE_EXTRA_CA_CERTS` (that's only for the owner's Mac on the corporate network).
+- n8n stays on the owner's Mac; nothing in the app calls it yet (v0.3 will need it reachable).
+- Vercel's free Hobby plan is for non-commercial use; check whether this needs the paid plan.
+
 ### Next step
 
-Owner runs `006_site_condition.sql`; then deploy to Vercel (env vars, Supabase site URL, the teammate's account) and the teammate starts research. Candidates after that: tests, auto-moving New to Contacted on a logged call, lead ownership when the teammate starts outreach, v0.3 (PageSpeed scores, n8n triggers via `app/api/`).
+Deploy to Vercel (above) and the teammate starts research. Then a real session covering research and calls; their notes set the priorities. Candidates after that: tests (Vitest, needs approval), auto-moving New to Contacted on a logged call, lead ownership when the teammate starts outreach, tuning the provisional site condition points after real calls, v0.3 (PageSpeed scores and comparing them with site condition, n8n triggers via `app/api/`).
