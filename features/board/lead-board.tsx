@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { PossibleName } from "@/components/ui/possible-name"
 import { StatusMark } from "@/components/ui/status-mark"
 import { STAGES, type Lead, type Stage } from "@/domain/lead"
 import { stageLabel } from "@/domain/vocabularies"
@@ -115,7 +116,11 @@ function BoardCard({
     >
       <span className="grid min-w-0">
         <span className={cn("truncate", selected && "font-medium")}>{lead.name}</span>
-        <span className="truncate text-label text-ink-muted">{lead.tradingName ?? formatPlace(lead) ?? "–"}</span>
+        {lead.possibleTradingName ? (
+          <PossibleName name={lead.possibleTradingName} className="truncate text-label text-ink-muted" />
+        ) : (
+          <span className="truncate text-label text-ink-muted">{lead.tradingName ?? formatPlace(lead) ?? "–"}</span>
+        )}
       </span>
       <span className="flex items-center justify-between gap-2 text-label">
         <StatusMark status={lead.websiteStatus} />

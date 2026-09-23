@@ -4,7 +4,9 @@
 export const WEBSITE_STATUSES = ["found", "unverified", "retry", "not_found"] as const
 export type WebsiteStatus = (typeof WEBSITE_STATUSES)[number]
 
-export const REVIEW_STATUSES = ["pending", "has_website", "no_website", "disqualified", "skipped"] as const
+// entity_only: the registered entity has no findable web presence and the
+// practice may trade under another name. Resolved by calling, not research.
+export const REVIEW_STATUSES = ["pending", "has_website", "no_website", "disqualified", "skipped", "entity_only"] as const
 export type ReviewStatus = (typeof REVIEW_STATUSES)[number]
 
 export const STAGES = ["new", "contacted", "follow_up", "interested", "proposal_sent", "won", "lost"] as const
@@ -38,6 +40,10 @@ export type Lead = {
   websiteStatus: WebsiteStatus | null
   /** How the website was found: automation's guess or a person. */
   websiteSource: string | null
+  /** Entity only: a trading name seen at this address, still unconfirmed. */
+  possibleTradingName: string | null
+  /** Entity only: a website that might belong to that trading name. */
+  possibleWebsite: string | null
   reviewStatus: ReviewStatus
   reviewNotes: string | null
   reviewedAt: string | null
@@ -54,12 +60,29 @@ export type Lead = {
 /** Every field a review action can touch, so it can be undone exactly. */
 export type ReviewSnapshot = Pick<
   Lead,
-  "reviewStatus" | "reviewNotes" | "reviewedAt" | "reviewedBy" | "website" | "websiteStatus" | "websiteSource"
+  | "reviewStatus"
+  | "reviewNotes"
+  | "reviewedAt"
+  | "reviewedBy"
+  | "website"
+  | "websiteStatus"
+  | "websiteSource"
+  | "possibleTradingName"
+  | "possibleWebsite"
 >
 
 export function reviewSnapshot(lead: Lead): ReviewSnapshot {
-  const { reviewStatus, reviewNotes, reviewedAt, reviewedBy, website, websiteStatus, websiteSource } = lead
-  return { reviewStatus, reviewNotes, reviewedAt, reviewedBy, website, websiteStatus, websiteSource }
+  return {
+    reviewStatus: lead.reviewStatus,
+    reviewNotes: lead.reviewNotes,
+    reviewedAt: lead.reviewedAt,
+    reviewedBy: lead.reviewedBy,
+    website: lead.website,
+    websiteStatus: lead.websiteStatus,
+    websiteSource: lead.websiteSource,
+    possibleTradingName: lead.possibleTradingName,
+    possibleWebsite: lead.possibleWebsite,
+  }
 }
 
 // A change a person makes to a lead. The adapter turns it into a database
@@ -68,6 +91,13 @@ export type LeadChange =
   | { kind: "review"; review: "has_website"; website: string }
   | { kind: "review"; review: "no_website" | "skipped" }
   | { kind: "review"; review: "disqualified"; note: string }
+  | {
+      kind: "review"
+      review: "entity_only"
+      possibleTradingName: string | null
+      possibleWebsite: string | null
+      note: string | null
+    }
   | { kind: "stage"; stage: Stage }
   /** Set or clear the follow-up date (YYYY-MM-DD). */
   | { kind: "follow_up"; date: string | null }
@@ -95,6 +125,14 @@ export function applyLeadChange(lead: Lead, change: LeadChange, now: string, act
       return { ...reviewed, website: change.website, websiteStatus: "found", websiteSource: "manual" }
     case "disqualified":
       return { ...reviewed, reviewNotes: change.note }
+    case "entity_only":
+      // website and website_status belong to automation; leave them alone.
+      return {
+        ...reviewed,
+        possibleTradingName: change.possibleTradingName,
+        possibleWebsite: change.possibleWebsite,
+        reviewNotes: change.note,
+      }
     default:
       return reviewed
   }

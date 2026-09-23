@@ -17,6 +17,7 @@ export const reviewStatusLabel: Record<ReviewStatus, string> = {
   no_website: "No website",
   disqualified: "Disqualified",
   skipped: "Skipped",
+  entity_only: "Entity only",
 }
 
 export const stageLabel: Record<Stage, string> = {

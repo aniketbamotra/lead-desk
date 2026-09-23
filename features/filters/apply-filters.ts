@@ -17,7 +17,7 @@ function matchesSearch(lead: Lead, search: string) {
     if (phones.some((p) => p.includes(queryDigits))) return true
   }
 
-  return [lead.name, lead.tradingName, lead.address.city, lead.contact.name, lead.website]
+  return [lead.name, lead.tradingName, lead.possibleTradingName, lead.address.city, lead.contact.name, lead.website]
     .some((field) => field?.toLowerCase().includes(query))
 }
 

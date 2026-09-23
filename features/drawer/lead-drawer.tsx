@@ -79,6 +79,11 @@ export function LeadDrawer({ lead, vertical, onClose, onChange, onLogCall, me, e
           <div className="grid min-w-0 flex-1 gap-0.5">
             <h2 className="text-title font-normal tracking-[-0.01em] text-balance">{lead.name}</h2>
             {lead.tradingName && <p className="text-ink-muted">Trading as {lead.tradingName}</p>}
+            {lead.possibleTradingName && (
+              <p className="text-ink-muted" title="Unconfirmed: a trading name seen at this address">
+                Possibly trading as {lead.possibleTradingName}
+              </p>
+            )}
             <p className="flex items-center gap-1.5 pt-1 text-label text-ink-muted">
               <Kbd>J</Kbd>
               <Kbd>K</Kbd>

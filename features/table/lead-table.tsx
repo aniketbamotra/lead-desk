@@ -6,6 +6,7 @@ import { useEffect } from "react"
 import type { Lead } from "@/domain/lead"
 import type { VerticalConfig } from "@/verticals/types"
 import { ListHeader } from "@/features/desk/list-header"
+import { PossibleName } from "@/components/ui/possible-name"
 import type { LeadTableInstance } from "./use-lead-table"
 
 const RIGHT_ALIGNED = new Set(["score"])
@@ -166,7 +167,11 @@ function BusinessCell({ lead, selected, onSelect }: { lead: Lead; selected: bool
         >
           {lead.name}
         </button>
-        {lead.tradingName && <span className="truncate text-label text-ink-muted">{lead.tradingName}</span>}
+        {lead.possibleTradingName ? (
+          <PossibleName name={lead.possibleTradingName} className="truncate text-label text-ink-muted" />
+        ) : (
+          lead.tradingName && <span className="truncate text-label text-ink-muted">{lead.tradingName}</span>
+        )}
       </span>
     </>
   )

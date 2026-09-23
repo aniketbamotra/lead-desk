@@ -50,6 +50,8 @@ export type LeadQueueRow = {
   website: string | null
   website_status: string | null
   website_source: string | null
+  possible_trading_name: string | null
+  possible_website: string | null
   review_status: string | null
   review_notes: string | null
   reviewed_at: string | null
@@ -106,6 +108,8 @@ export function toLead(row: LeadQueueRow): Lead {
     website: blankToNull(row.website),
     websiteStatus: oneOf<WebsiteStatus>(WEBSITE_STATUSES, row.website_status, null),
     websiteSource: blankToNull(row.website_source),
+    possibleTradingName: blankToNull(row.possible_trading_name),
+    possibleWebsite: blankToNull(row.possible_website),
     reviewStatus: oneOf<ReviewStatus>(REVIEW_STATUSES, row.review_status, "pending"),
     reviewNotes: blankToNull(row.review_notes),
     reviewedAt: row.reviewed_at,
@@ -148,6 +152,8 @@ export function toLeadsUpdate(change: LeadChange, now: string): Record<string, s
       website: snapshot.website ?? "", // no website is stored as ''
       website_status: snapshot.websiteStatus,
       website_source: snapshot.websiteSource,
+      possible_trading_name: snapshot.possibleTradingName,
+      possible_website: snapshot.possibleWebsite,
     }
   }
 
@@ -164,6 +170,14 @@ export function toLeadsUpdate(change: LeadChange, now: string): Record<string, s
       }
     case "disqualified":
       return { ...reviewed, review_notes: change.note }
+    case "entity_only":
+      // website and website_status stay as automation left them.
+      return {
+        ...reviewed,
+        possible_trading_name: change.possibleTradingName,
+        possible_website: change.possibleWebsite,
+        review_notes: change.note,
+      }
     default:
       return reviewed
   }

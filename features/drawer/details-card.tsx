@@ -42,6 +42,15 @@ export function DetailsCard({ lead, vertical, me }: { lead: Lead; vertical: Vert
         </a>
       ) : null,
     },
+    { label: "Possible trading name", value: lead.possibleTradingName },
+    {
+      label: "Possible website",
+      value: lead.possibleWebsite ? (
+        <a href={lead.possibleWebsite} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">
+          {displayWebsite(lead.possibleWebsite)}
+        </a>
+      ) : null,
+    },
     { label: "Review notes", value: lead.reviewNotes },
     {
       label: "Reviewed",

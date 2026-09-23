@@ -74,6 +74,7 @@ Supabase (Postgres). RLS is enabled. The dashboard uses the **anon/publishable k
 | `website` | URL or `''` |
 | `website_status` | automated result, see below |
 | `website_source` | `domain_guess` or `manual` |
+| `possible_trading_name`, `possible_website` | entity only: an unconfirmed trading name seen at the address, and its website if found. Written by a person, never by automation |
 | `domain_checked_at` | set when enrichment finishes a lead |
 | `review_status` | manual research result, see below |
 | `review_notes`, `reviewed_at` | |
@@ -96,7 +97,8 @@ Keep these three separate. They answer different questions.
 - `null` — not checked yet
 
 **`review_status`** — what a human decided
-- `pending` (default), `has_website`, `no_website`, `disqualified`, `skipped`
+- `pending` (default), `has_website`, `no_website`, `disqualified`, `skipped`, `entity_only`
+- `entity_only` means the registered entity has no findable web presence, and the practice at that address may trade under a different name. It's neither `no_website` (a prime lead) nor `disqualified` (dead): it's an unresolved identity, settled by phoning the practice and hearing the trading name in the greeting. A call-first group, not a research backlog.
 
 **`status`** — sales pipeline stage
 - `new` (default) → `contacted` → `follow_up` → `interested` → `proposal_sent` → `won` / `lost`
@@ -237,9 +239,10 @@ On a network that inspects HTTPS traffic, the proxy re-signs connections with it
     - **No website** → `review_status='no_website'`
     - **Disqualify** with a note → `review_status='disqualified'`, `review_notes`
     - **Skip** → `review_status='skipped'`
+    - **Mark as entity only** (`5`) → optional trading name seen at the address and its website, plus notes (pre-filled with what's saved) → `review_status='entity_only'`, `possible_trading_name`, `possible_website`, `review_notes`, `reviewed_at`. Leaves `website` and `website_status` alone (automation owns them). The table shows the possible trading name as "Possibly …" under the business name, in place of the trading name.
   - Call: copy phone number, and a `tel:` link
   - Stage selector (writes `status`, `stage_updated_at`)
-- **Keyboard**: `J`/`K` next/previous lead within the current filtered set, `1`–`4` review actions, `C` copy phone, `/` focus search, `Esc` close drawer, `Z` undo the last review, `L` log a call, `?` shortcuts sheet (also the keyboard button in the header).
+- **Keyboard**: `J`/`K` next/previous lead within the current filtered set, `1`–`5` review actions, `C` copy phone, `/` focus search, `Esc` close drawer, `Z` undo the last review, `L` log a call, `?` shortcuts sheet (also the keyboard button in the header).
 
 URL formats:
 - `https://www.google.com/search?q=${encodeURIComponent(query)}`
@@ -416,6 +419,12 @@ _Last updated: end of session 2 (2026-09-23)._
 - Review and undo saves only apply if `review_status` still matches what the screen showed (`useUpdateLead`); otherwise the drawer says who reviewed it first and the list refreshes.
 - Leads refresh every 60s and on window focus. A successful save re-applies its change so a refresh that landed mid-save can't undo it on screen.
 - The drawer shows "Reviewed Sep 23 by Priya" / "by you" and "by …" on each activity (`lib/people.ts`).
+
+### Entity only (session 3)
+
+- Fifth review status `entity_only` ("Entity only", key `5`), end to end: domain vocabulary, `Lead.possibleTradingName` / `possibleWebsite`, adapter read and write, entity-only form in the review card (`features/drawer/entity-only-form.tsx`), undo restores both fields, filter rail and URL filters, "Possibly …" in the table, board, drawer header and details (`components/ui/possible-name.tsx`), a research link for the possible name, search matches it, shortcuts sheet.
+- Database: the owner ran `supabase/sql/005_entity_only.sql` (named 005 because 004 was taken by attribution; it recreates `lead_queue` from the 004 view with the two columns appended, since the view lists columns by name rather than `l.*`).
+- If saving "Entity only" fails with a check-constraint error, `review_status` has a constraint listing allowed values that needs `entity_only` added.
 
 ### Known gaps
 

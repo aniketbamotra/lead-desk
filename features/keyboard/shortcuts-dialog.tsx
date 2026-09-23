@@ -20,6 +20,7 @@ const GROUPS: { title: string; items: { keys: string[]; label: string }[] }[] = 
       { keys: ["2"], label: "No website" },
       { keys: ["3"], label: "Disqualify" },
       { keys: ["4"], label: "Skip" },
+      { keys: ["5"], label: "Entity only" },
       { keys: ["Z"], label: "Undo the last review" },
     ],
   },

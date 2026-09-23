@@ -18,6 +18,9 @@ export function researchLinks(lead: Lead, vertical: VerticalConfig): ResearchLin
   if (lead.tradingName) {
     links.push({ label: "Google the trading name", href: google(join(lead.tradingName, city)) })
   }
+  if (lead.possibleTradingName) {
+    links.push({ label: "Google the possible trading name", href: google(join(lead.possibleTradingName, city)) })
+  }
   if (lead.phone) {
     links.push({ label: "Google the phone number", href: google(`"${lead.phone}"`) })
   }
