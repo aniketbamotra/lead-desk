@@ -17,15 +17,15 @@ import { toDisplayCase } from "@/lib/display-case"
 export const READ_SOURCE = "lead_queue"
 export const WRITE_TABLE = "leads"
 
-// lead_queue doesn't expose `vertical` until the view is recreated after the
-// setup checklist. Until then, don't filter by it; rows default to dental.
-export const FILTER_BY_VERTICAL = false
+// lead_queue exposes `vertical` (supabase/sql/001_lead_queue_new_columns.sql),
+// so each vertical only loads its own leads.
+export const FILTER_BY_VERTICAL = true
 const DEFAULT_VERTICAL = "dental"
 
 /** Columns of public.lead_queue this app reads. */
 export type LeadQueueRow = {
   id: number
-  vertical?: string | null
+  vertical: string | null
   npi: string | null
   business_name: string | null
   dba_name: string | null
@@ -53,8 +53,8 @@ export type LeadQueueRow = {
   review_notes: string | null
   reviewed_at: string | null
   status: string | null
-  next_follow_up?: string | null
-  stage_updated_at?: string | null
+  next_follow_up: string | null
+  stage_updated_at: string | null
   qual_score: number | null
   official_org_count: number | null
   is_duplicate: boolean | null
@@ -107,8 +107,8 @@ export function toLead(row: LeadQueueRow): Lead {
     reviewNotes: blankToNull(row.review_notes),
     reviewedAt: row.reviewed_at,
     stage: oneOf<Stage>(STAGES, row.status, "new"),
-    stageUpdatedAt: row.stage_updated_at ?? null,
-    nextFollowUp: row.next_follow_up ?? null,
+    stageUpdatedAt: row.stage_updated_at,
+    nextFollowUp: row.next_follow_up,
     score: row.qual_score,
     details: {
       npi: row.npi,
