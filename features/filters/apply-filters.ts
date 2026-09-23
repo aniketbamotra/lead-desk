@@ -24,8 +24,21 @@ function inList<T>(list: T[], value: T) {
   return list.length === 0 || list.includes(value)
 }
 
+/** Today as YYYY-MM-DD in local time, to compare with date-only follow-ups. */
+export function todayISO() {
+  const now = new Date()
+  const pad = (n: number) => String(n).padStart(2, "0")
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
+}
+
+export function isDue(lead: Lead, today = todayISO()) {
+  return lead.nextFollowUp !== null && lead.nextFollowUp <= today
+}
+
 export function applyFilters(leads: Lead[], filters: Filters, vertical: VerticalConfig): Lead[] {
+  const today = todayISO()
   return leads.filter((lead) => {
+    if (filters.dueOnly && !isDue(lead, today)) return false
     if (!inList(filters.states, lead.address.state ?? "")) return false
     if (!inList(filters.cities, lead.address.city ?? "")) return false
     const website: WebsiteFilterValue = lead.websiteStatus ?? "unchecked"

@@ -12,6 +12,8 @@ export type Filters = {
   stages: Stage[]
   scoreMin: number | null
   scoreMax: number | null
+  /** Only leads whose follow-up date is today or earlier. */
+  dueOnly: boolean
   /** Vertical toggle filters, by filter id. */
   toggles: Record<string, boolean>
   /** Vertical option filters, by filter id. */
@@ -34,6 +36,7 @@ export function defaultFilters(vertical: VerticalConfig): Filters {
     stages: [],
     scoreMin: null,
     scoreMax: null,
+    dueOnly: false,
     toggles,
     options,
   }

@@ -8,6 +8,17 @@ export function isTypingTarget(target: EventTarget | null) {
 }
 
 /**
+ * True when a keypress happens inside an open popover or dialog. That layer
+ * handles its own keys (Esc closes it), so desk shortcuts stay out of the way.
+ */
+function isInsideLayer(target: EventTarget | null) {
+  return (
+    target instanceof HTMLElement &&
+    Boolean(target.closest('[role="dialog"], [data-radix-popper-content-wrapper]'))
+  )
+}
+
+/**
  * Single-key shortcuts. Ignored while typing in a field or when a modifier
  * key is held, so browser and OS shortcuts keep working.
  */
@@ -21,7 +32,7 @@ export function useKeys(handlers: Record<string, () => void>, enabled = true) {
     if (!enabled) return
     function onKeyDown(event: KeyboardEvent) {
       if (event.metaKey || event.ctrlKey || event.altKey || event.defaultPrevented) return
-      if (isTypingTarget(event.target)) return
+      if (isTypingTarget(event.target) || isInsideLayer(event.target)) return
       const handler = ref.current[event.key.toLowerCase()] ?? ref.current[event.key]
       if (!handler) return
       event.preventDefault()

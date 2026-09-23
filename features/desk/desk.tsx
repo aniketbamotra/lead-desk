@@ -16,6 +16,7 @@ import { LeadTable } from "@/features/table/lead-table"
 import { useLeadTable } from "@/features/table/use-lead-table"
 import { TopBar } from "./top-bar"
 import { UndoBar } from "./undo-bar"
+import { ShortcutsDialog } from "@/features/keyboard/shortcuts-dialog"
 
 const EMPTY: never[] = []
 
@@ -25,9 +26,8 @@ const CONFIRM_MS = 700
 
 type LastReview = { leadId: number; name: string; label: string; before: ReviewSnapshot }
 
-function readLeadParam() {
-  if (typeof window === "undefined") return null
-  const value = Number(new URLSearchParams(window.location.search).get("lead"))
+function leadFromQuery(query: string) {
+  const value = Number(new URLSearchParams(query).get("lead"))
   return Number.isInteger(value) && value > 0 ? value : null
 }
 
@@ -38,22 +38,22 @@ function writeLeadParam(id: number | null) {
   window.history.replaceState(window.history.state, "", url)
 }
 
-export function Desk({ email }: { email: string | null }) {
+export function Desk({ email, initialQuery }: { email: string | null; initialQuery: string }) {
   const vertical = activeVertical
   const leadsQuery = useLeads(vertical.id)
   const leads = leadsQuery.data ?? EMPTY
   const updateLead = useUpdateLead(vertical.id)
-  const filtersApi = useFilters(vertical)
+  const filtersApi = useFilters(vertical, initialQuery)
   const { filters, update } = filtersApi
 
   const [railOpen, setRailOpen] = useState(true)
   // The selected lead lives in the URL (?lead=123) so a refresh keeps it.
-  // Safe to read on first render: nothing selected shows until leads load.
-  const [selectedId, setSelectedId] = useState<number | null>(readLeadParam)
+  const [selectedId, setSelectedId] = useState<number | null>(() => leadFromQuery(initialQuery))
   const [saveError, setSaveError] = useState<string | null>(null)
   const [confirmation, setConfirmation] = useState<string | null>(null)
   const [lastReview, setLastReview] = useState<LastReview | null>(null)
   const [flash, setFlash] = useState<{ id: number; n: number } | null>(null)
+  const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const advanceTimer = useRef<number | null>(null)
   const searchRef = useRef<HTMLInputElement>(null)
 
@@ -128,6 +128,7 @@ export function Desk({ email }: { email: string | null }) {
     j: () => move(1),
     k: () => move(-1),
     z: undo,
+    "?": () => setShortcutsOpen(true),
     escape: () => select(null),
   })
 
@@ -142,6 +143,7 @@ export function Desk({ email }: { email: string | null }) {
           searchRef={searchRef}
           railOpen={railOpen}
           onToggleRail={() => setRailOpen((open) => !open)}
+          onShowShortcuts={() => setShortcutsOpen(true)}
         />
       </header>
 
@@ -196,6 +198,8 @@ export function Desk({ email }: { email: string | null }) {
           />
         )}
       </main>
+
+      <ShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
 
       {lastReview && (
         <div className="pointer-events-none fixed inset-x-0 bottom-6 z-40 flex justify-center px-4">

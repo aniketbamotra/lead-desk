@@ -1,6 +1,6 @@
 "use client"
 
-import { PanelLeftClose, PanelLeftOpen, Search } from "lucide-react"
+import { Keyboard, PanelLeftClose, PanelLeftOpen, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Kbd } from "@/components/ui/kbd"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -15,9 +15,10 @@ type Props = {
   searchRef: React.RefObject<HTMLInputElement | null>
   railOpen: boolean
   onToggleRail: () => void
+  onShowShortcuts: () => void
 }
 
-export function TopBar({ vertical, email, search, onSearchChange, searchRef, railOpen, onToggleRail }: Props) {
+export function TopBar({ vertical, email, search, onSearchChange, searchRef, railOpen, onToggleRail, onShowShortcuts }: Props) {
   const signOut = useSignOut()
   const initial = email?.charAt(0).toUpperCase() ?? "?"
 
@@ -60,6 +61,10 @@ export function TopBar({ vertical, email, search, onSearchChange, searchRef, rai
         />
         {!search && <Kbd aria-hidden>/</Kbd>}
       </label>
+
+      <Button variant="outline" size="icon" onClick={onShowShortcuts} aria-label="Keyboard shortcuts" title="Keyboard shortcuts (?)">
+        <Keyboard aria-hidden />
+      </Button>
 
       <Popover>
         <PopoverTrigger asChild>
