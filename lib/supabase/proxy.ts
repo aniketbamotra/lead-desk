@@ -2,8 +2,9 @@ import { NextResponse, type NextRequest } from "next/server"
 import { createServerClient } from "@supabase/ssr"
 import { supabaseEnv } from "./env"
 
-// Paths a signed-out visitor may open.
-const PUBLIC_PATHS = ["/sign-in"]
+// Paths a signed-out visitor may open. /demo holds the prospect-facing
+// concept sites and template previews.
+const PUBLIC_PATHS = ["/sign-in", "/demo/"]
 
 // Refreshes the session cookie on every request and sends signed-out
 // visitors to /sign-in. Called from the root proxy.ts.

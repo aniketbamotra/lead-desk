@@ -202,7 +202,9 @@ domain/              Lead type, LeadChange + applyLeadChange, status vocabularie
 verticals/           VerticalConfig type, dental.ts, index.ts (activeVertical)
 data/                the only code that touches Supabase: adapters/lead-queue.ts, use-leads, use-update-lead, use-session
 components/ui/       restyled shadcn primitives + our own (chip, kbd, status-mark, input)
-features/            auth, desk, filters, table, drawer, keyboard
+features/            auth, desk, filters, table, drawer, keyboard, demo
+templates/           prospect demo sites (see Demo sites): one folder per template, _shared/, index.ts (metadata), components.ts
+public/demos/        template photos (Unsplash, see CREDITS.md)
 ```
 
 Components import from `domain/`, `verticals/` and the `data/` hooks, never from `data/adapters/` or `lib/supabase/`.
@@ -259,6 +261,18 @@ URL formats:
 - Activity timeline in the drawer; stage changes are logged there automatically
 - "Due" filter chip in the list header: leads where `next_follow_up <= today`, within the other filters. Follow-up dates also show under the stage in the table (coral when due)
 - Board view grouped by stage (Table / Board switch in the list header, `?view=board`). No drag and drop: stages change in the drawer
+
+### Demo sites (built in session 5)
+
+Personalised concept websites shown to a prospect before a call, at `/demo/<slug>`.
+
+- Four dental templates in `templates/`: Clearview (clinical, teal), Brightwater (warm editorial, serif, stepped booking form), Fifth Street (bold yellow and black, prices), Harlow (dark luxury, cosmetic, before/after slider). Ported from the owner's Claude Design project (originals in `design/source/`, untracked) after an impeccable critique of each (`.impeccable/critique/`). Maple Street was dropped as a duplicate of Clearview.
+- **Templates must stay exportable.** A template imports only from its own folder and `templates/_shared/`, never from `@/` app code, desk components or desk tokens. Its only input is `DemoContent` (`templates/_shared/content.ts`). Styling is a CSS module per template with its own tokens and resets; fonts via `next/font/google`.
+- Practice name, phone and address come from the lead; city and state appear in headlines and copy. Hours drive claims ("Open Saturdays", "Late Tuesdays"), the booking slots and the Today badge. Sample reviews, bios and prices are kept as designed (owner's decision), without the fictional practices' names or cities.
+- Database: `supabase/sql/007_demos.sql` (`demos` table, one per lead; `get_demo(slug)` security definer, the only thing anon can call; returns nothing when the link is off or the lead is lost).
+- Drawer "Demo site" card: pick a template, create the link (readable name + random suffix), copy or open it, switch it off, edit name, headline, intro, email, booking link and hours, download `content.json` (template + content) for the client's own project.
+- `/demo/preview/<template>` shows each template with a fictional practice (public, no real data). All `/demo/*` pages are noindex (metadata and an `X-Robots-Tag` header) and public in `lib/supabase/proxy.ts`. A concept note above each demo names the author and has a template switcher (`features/demo/concept-note.tsx`): on a demo it sets `?template=` for viewing only, the saved template stays the default. It lives outside the templates so they stay exportable.
+- Not built yet: logging demo opens (plan: client-side beacon after load, skip signed-in visitors and preview bots) and the export script that copies a template folder plus `content.json` into a standalone project (write it when the first client says yes).
 
 ### v0.3 — audit and automation
 
@@ -405,7 +419,7 @@ Stock shadcn look; drop shadows on cards; gradients as decoration; all-caps eyeb
 
 ## Current state
 
-_Last updated: session 4 (2026-09-23)._
+_Last updated: session 5 (2026-10-01)._
 
 ### Built
 
@@ -465,6 +479,12 @@ _Last updated: session 4 (2026-09-23)._
 
 - "Local time" column after Phone: `Lead.timeZone` (derived in the adapter from state + ZIP by `lib/time-zones.ts`, no database change), `VerticalConfig.callingHours`, one shared minute clock (`lib/use-minute-clock.ts`) so rows don't each run a timer. Rendered by `LeadTable` (like Business) because the cell needs the vertical's calling hours. Not yet in the drawer or as a filter ("callable now" would be a natural next filter).
 
+### Demo sites (session 5)
+
+- Built end to end; see **Demo sites** under Scope. Needs the owner to run `supabase/sql/007_demos.sql` before the Demo card works (until then it shows an error and `/demo/<slug>` shows "no longer available").
+- Checked in headless Chromium at 1440 and 390 wide for all four templates: no horizontal overflow, maps load, typecheck and lint clean, impeccable detector clean. Not yet checked in the owner's browser or against a real lead.
+- Fifth Street's Dr. Patel stock photo shows a stethoscope; swap it if it bothers anyone.
+
 ### Known gaps
 
 - `J`/`K` follow the table's sort order in board view too.
@@ -485,4 +505,14 @@ The owner is deploying to Vercel from the GitHub repo (`main`). What it needs:
 
 ### Next step
 
-Deploy to Vercel (above) and the teammate starts research. Then a real session covering research and calls; their notes set the priorities. Candidates after that: tests (Vitest, needs approval), auto-moving New to Contacted on a logged call, lead ownership when the teammate starts outreach, tuning the provisional site condition points after real calls, v0.3 (PageSpeed scores and comparing them with site condition, n8n triggers via `app/api/`).
+Run `007_demos.sql`, create a demo for a real lead and check it on a phone. Then: deploy to Vercel (above) and the teammate starts research. Then a real session covering research and calls; their notes set the priorities. Candidates after that: tests (Vitest, needs approval), auto-moving New to Contacted on a logged call, lead ownership when the teammate starts outreach, tuning the provisional site condition points after real calls, v0.3 (PageSpeed scores and comparing them with site condition, n8n triggers via `app/api/`).
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

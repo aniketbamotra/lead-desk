@@ -9,6 +9,7 @@ import type { VerticalConfig } from "@/verticals/types"
 import { ActivityCard } from "./activity-card"
 import { CallCard } from "./call-card"
 import type { LoggedCall } from "./log-call-form"
+import { DemoCard } from "./demo-card"
 import { DetailsCard } from "./details-card"
 import { ResearchCard } from "./research-card"
 import { ResizeHandle } from "./resize-handle"
@@ -134,6 +135,7 @@ export function LeadDrawer({ lead, vertical, onClose, onChange, onLogCall, me, e
             locked={confirmation !== null}
           />
           <StageCard stage={lead.stage} onChange={(stage: Stage) => onChange({ kind: "stage", stage })} />
+          <DemoCard key={`demo-${lead.id}`} lead={lead} vertical={vertical} />
           <ActivityCard leadId={lead.id} me={me} />
           <DetailsCard lead={lead} vertical={vertical} me={me} />
         </div>
