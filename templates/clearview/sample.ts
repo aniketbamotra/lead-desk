@@ -27,23 +27,23 @@ export const serviceGroups = [
   {
     title: "Everyday care",
     items: [
-      ["Checkups & cleanings", "Exams, cleanings and X-rays, usually twice a year."],
-      ["Children's dentistry", "Calm, friendly visits for kids from their first tooth."],
-      ["Fillings & crowns", "Tooth-colored fillings and crowns to repair damage."],
+      ["Checkups & cleanings", "Exams, cleanings and X-rays, usually twice a year.", "checkups"],
+      ["Children's dentistry", "Calm, friendly visits for kids from their first tooth.", "children"],
+      ["Fillings & crowns", "Tooth-colored fillings and crowns to repair damage.", "fillings"],
     ],
   },
   {
     title: "Repair and replace",
     items: [
-      ["Root canal therapy", "Save an infected tooth and relieve the pain."],
-      ["Dental implants", "A long-lasting replacement for a missing tooth."],
+      ["Root canal therapy", "Save an infected tooth and relieve the pain.", "rootCanal"],
+      ["Dental implants", "A long-lasting replacement for a missing tooth.", "implants"],
     ],
   },
   {
     title: "Cosmetic",
     items: [
-      ["Whitening", "In-office or take-home options for a brighter smile."],
-      ["Clear aligners", "Removable aligners that straighten teeth gradually."],
+      ["Whitening", "In-office or take-home options for a brighter smile.", "whitening"],
+      ["Clear aligners", "Removable aligners that straighten teeth gradually.", "aligners"],
     ],
   },
 ] as const

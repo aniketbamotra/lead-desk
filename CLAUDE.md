@@ -384,7 +384,7 @@ Shape and controls:
 - Every block (header, filter rail, table, drawer) is a rounded `panel` on the white page, with a 12px gap and 12px outer margin. Nothing runs edge to edge.
 - The header holds the rail toggle, the name with the vertical's display name under it (from config), the search pill with its `/` hint, and the account menu.
 - No count circles. They were dropped in session 2: the filter rail and the table's "930 of 1,181" line already cover them.
-- The filter rail is 240px and collapses. The drawer opens beside the table when a row is selected. It is 400px by default, resizable from 360 to 640px by drag or arrow keys, and its width is remembered. It stacks white cards in this order: call, research, review, stage, details.
+- The filter rail is 240px and collapses. The drawer opens beside the table when a row is selected. It is 400px by default, resizable from 360 to 640px by drag or arrow keys, and its width is remembered. It stacks white cards in this order: call, research, review, stage, demo site, activity, details.
 - The selected lead goes in the URL (`?lead=123`).
 
 ### Principles
@@ -441,6 +441,7 @@ _Last updated: session 5 (2026-10-01)._
 - `002_qual_score_grading.sql`: graded `qual_score` (max 43, was 30). Before grading the spread was 55 leads at 30, 53 at 25, 344 at 20, 275 at 15, the rest lower (DSOs and duplicates excluded). Also fixed the case-sensitive "management" rule and the area-code rule that penalised leads with no contact phone.
 - `003_lead_activities.sql`: `lead_activities` table, index and RLS policy.
 - RLS read and update on `leads` work (reviews save).
+- `007_demos.sql` (run 2026-10-01): `demos` table and `get_demo(slug)` for the demo sites. Checked with the anon key: `rpc/get_demo` answers, and anon gets no rows from `demos`.
 - Keep view SQL in `supabase/sql/`, not only in chat: chat formatting strips `*`.
 
 ### Decisions worth remembering
@@ -481,9 +482,10 @@ _Last updated: session 5 (2026-10-01)._
 
 ### Demo sites (session 5)
 
-- Built end to end; see **Demo sites** under Scope. Needs the owner to run `supabase/sql/007_demos.sql` before the Demo card works (until then it shows an error and `/demo/<slug>` shows "no longer available").
+- Built end to end; see **Demo sites** under Scope. `supabase/sql/007_demos.sql` is run, so the Demo card and `/demo/<slug>` links work.
 - Checked in headless Chromium at 1440 and 390 wide for all four templates: no horizontal overflow, maps load, typecheck and lint clean, impeccable detector clean. Not yet checked in the owner's browser or against a real lead.
 - Fifth Street's Dr. Patel stock photo shows a stethoscope; swap it if it bothers anyone.
+- Clearview got a character pass (impeccable, same look): looser spacing, a 96px teal line illustration per service and for the emergency call-out (`templates/clearview/illustrations.tsx`), an "Open today" hours card over the hero photo (`hours-today.tsx`), and a tinted band behind "Your first visit".
 
 ### Known gaps
 
@@ -505,7 +507,7 @@ The owner is deploying to Vercel from the GitHub repo (`main`). What it needs:
 
 ### Next step
 
-Run `007_demos.sql`, create a demo for a real lead and check it on a phone. Then: deploy to Vercel (above) and the teammate starts research. Then a real session covering research and calls; their notes set the priorities. Candidates after that: tests (Vitest, needs approval), auto-moving New to Contacted on a logged call, lead ownership when the teammate starts outreach, tuning the provisional site condition points after real calls, v0.3 (PageSpeed scores and comparing them with site condition, n8n triggers via `app/api/`).
+Create a demo for a real lead and check it on a phone. The demo sites were pushed to `main` on 2026-10-01 (commit `7336580`), so they deploy with the next Vercel build. Then the teammate starts research. Then a real session covering research and calls; their notes set the priorities. Candidates after that: tests (Vitest, needs approval), auto-moving New to Contacted on a logged call, lead ownership when the teammate starts outreach, tuning the provisional site condition points after real calls, v0.3 (PageSpeed scores and comparing them with site condition, n8n triggers via `app/api/`).
 
 <!-- BEGIN:nextjs-agent-rules -->
 

@@ -13,6 +13,8 @@ import {
   phoneHref,
 } from "../_shared/practice"
 import { TodayBadge } from "../_shared/today"
+import { HoursToday } from "./hours-today"
+import { illustrations } from "./illustrations"
 import { faqs, insurers, modern, parking, reviews, serviceGroups, steps, team } from "./sample"
 import s from "./clearview.module.css"
 
@@ -128,6 +130,7 @@ export default function Clearview({ content }: TemplateProps) {
               fetchPriority="high"
               sizes="(min-width: 1024px) 50vw, 100vw"
             />
+            <HoursToday hours={p.hours} tel={tel} phone={phone} />
           </div>
         </section>
 
@@ -143,10 +146,13 @@ export default function Clearview({ content }: TemplateProps) {
               <div key={group.title} className={s.serviceGroup}>
                 <h3 className={s.groupTitle}>{group.title}</h3>
                 <ul className={s.serviceList}>
-                  {group.items.map(([name, desc]) => (
+                  {group.items.map(([name, desc, icon]) => (
                     <li key={name}>
-                      <span className={s.serviceName}>{name}</span>
-                      <span className={s.muted}>{desc}</span>
+                      {illustrations[icon]}
+                      <div>
+                        <h4 className={s.serviceName}>{name}</h4>
+                        <p className={s.muted}>{desc}</p>
+                      </div>
                     </li>
                   ))}
                 </ul>
@@ -154,7 +160,8 @@ export default function Clearview({ content }: TemplateProps) {
             ))}
           </div>
           <aside aria-label="Emergency care" className={s.emergency}>
-            <div>
+            {illustrations.emergency}
+            <div className={s.emergencyBody}>
               <p className={s.emergencyTitle}>Tooth pain, swelling or a broken tooth?</p>
               <p className={s.emergencyText}>Call as early as you can. We keep time free every day for emergency visits.</p>
             </div>
@@ -219,7 +226,8 @@ export default function Clearview({ content }: TemplateProps) {
           </div>
         </section>
 
-        <section id="new-patients" aria-labelledby="first-h" className={`${s.wrap} ${s.section}`}>
+        <section id="new-patients" aria-labelledby="first-h" className={s.band}>
+          <div className={s.wrapInner}>
           <h2 id="first-h" className={s.h2}>
             Your first visit
           </h2>
@@ -257,9 +265,10 @@ export default function Clearview({ content }: TemplateProps) {
               </p>
             </div>
           </aside>
+          </div>
         </section>
 
-        <section aria-labelledby="faq-h" className={`${s.wrap} ${s.section}`}>
+        <section aria-labelledby="faq-h" className={`${s.wrap} ${s.sectionAfterBand}`}>
           <h2 id="faq-h" className={s.h2}>
             Frequently asked questions
           </h2>
